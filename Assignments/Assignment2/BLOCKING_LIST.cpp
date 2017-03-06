@@ -7,18 +7,19 @@
 using namespace std;
 
 const int THREAD_COUNT = 4;
-const int NUM_OPERATIONS = 33554432; // Total number of operations performed
+const int NUM_OPERATIONS = 20; //33554432; // Total number of operations performed
 const bool DEBUG = true;
 
-class Bits {
+class Pool {
 	public:
-		int bits[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT][2];
-		Bits() { // Initialize our random bits
+		unsigned char bits[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
+		int ints[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
+		Pool() { // Initialize our random bits and ints
 			srand(time(NULL));
 			for(int i=0; i<THREAD_COUNT; i++) {
 				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
-					bits[i][j][0] = rand()%3; // 0=insert,1=delete,2=find
-					bits[i][j][1] = rand()%INT_MAX+INT_MIN; // A random int
+					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
+					ints[i][j] = rand()%INT_MAX+INT_MIN; // A random int
 				}
 			}
 		}
@@ -41,7 +42,7 @@ class Node {
 			key = num%INT_MAX;
 			next = succ;
 		}
-		//T item; // TODO: Try to make this generic
+		//T item; // TODO: Try to make this generic if we have the time
 		int item; // Use this int in the meantime
 		int key;
 		Node *next;
@@ -53,8 +54,7 @@ class List {
 		mutex lock;
 	public:
 		List() {
-			Node *tail = new Node(INT_MAX);
-			head = new Node(INT_MIN, tail); // Create our head and tail, which cannot be destroyed
+			head = new Node(INT_MIN, new Node(INT_MAX)); // Create our head and tail, which cannot be destroyed
 		}
 		bool add(int num) {
 			Node *pred, *curr;
@@ -77,7 +77,7 @@ class List {
 				return true;
 			}
 		}
-		int remove(int num) {
+		bool remove(int num) {
 			Node *pred, *curr;
 			int key = num;
 			lock.lock();
@@ -97,7 +97,7 @@ class List {
 				return false;
 			}
 		}
-		int contains(int num) {
+		bool contains(int num) {
 			Node *pred, *curr;
 			int key = num;
 			lock.lock();
@@ -118,47 +118,49 @@ class List {
 };
 
 List list; // Create our list
-Bits bits; // Create our bits
+Pool pool; // Create our pool
 
 void runThread(int threadNum) {
 	for(int i=0; i<NUM_OPERATIONS/THREAD_COUNT; i++) {
-		switch(bits.bits[threadNum][i][0]) {
+		switch(pool.bits[threadNum][i]) {
 			case 0:
-				list.add(bits.bits[threadNum][i][1]);
+				if(list.add(pool.ints[threadNum][i])) {
+					if(DEBUG) cout << "Inserted " << pool.ints[threadNum][i] << endl;
+				} else {
+					if(DEBUG) cout << "Failed to insert " << pool.ints[threadNum][i] << " (Already in the set)" << endl;
+				}
+				break;
 			case 1:
-				list.remove(bits.bits[threadNum][i][1]);
+				if(list.remove(pool.ints[threadNum][i])) {
+					if(DEBUG) cout << "Removed" << pool.ints[threadNum][i] << endl;
+				} else {
+					if(DEBUG) cout << "Failed to remove " << pool.ints[threadNum][i] << " (Not in the set)" << endl;
+				}
+				break;
 			case 2:
-				list.contains(bits.bits[threadNum][i][1]);
-			default:
-				// This should never be possible, but we need to handle it anyway
+				if(list.contains(pool.ints[threadNum][i])) {
+					if(DEBUG) cout << "Found" << pool.ints[threadNum][i] << endl;
+				} else {
+					if(DEBUG) cout << "Did not find " << pool.ints[threadNum][i] << endl;
+				}
+				break;
+			default: // This should never be possible, but we need to handle it anyway
+				if(DEBUG) cout << "Invalid case set by bit pool (" <<  (int)pool.bits[threadNum][i] << ")" << endl;
 				break;
 		}
 	}
 }
 
 int main(int argc, char *argv[]) {
-	// Create our threads
-	thread threads[THREAD_COUNT];
-	
-	// Get the time
-	auto start = chrono::system_clock::now();
-	
-	// Start our threads
-	for(long i=0; i<THREAD_COUNT; i++) {
+	thread threads[THREAD_COUNT]; // Create our threads
+	auto start = chrono::system_clock::now(); // Get the time
+	for(long i=0; i<THREAD_COUNT; i++) { // Start our threads
 		threads[i] = thread(runThread, i);
 	}
-	// Wait for all threads to complete
-	for(int i=0; i<THREAD_COUNT; i++) {
+	for(int i=0; i<THREAD_COUNT; i++) { // Wait for all threads to complete
 		threads[i].join();
 	}
-	
-	// Get the time
-	auto end = chrono::system_clock::now();
-	
-	// Get total execution time
-	auto total = chrono::duration_cast<chrono::milliseconds>(end - start);
-	
+	auto total = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - start); // Get total execution time
 	cout << "Total runtime is " << total.count() << " milliseconds" << endl;
-
 	return 0;
 }
