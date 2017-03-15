@@ -32,25 +32,21 @@ class Pool {
 		}
 };
 
-class MarkableReference {
-    private:
-        uintptr_t val;
-        static const uintptr_t mask = 1;
-    public:
-        MarkableReference(Node *ref = NULL, bool mark = false)
-        {
-            val = ((uintptr_t)ref & ~mask) | (mark ? 1 : 0);
-        }
-        Node* getReference(void)
-        {
-            return (Node*)(val & ~mask);
-        }
-        Node *get(bool *mark)
-        {
-            *mark = (val & mask);
-            return (Node*)(val & ~mask);
-        }
-};
+// MarkableReference functions
+static const uintptr_t mask = 1; // This mask is used to properly store our mark
+// Take a pointer and a mark and pack them into one pointer
+uintptr_t MarkableReference(Node *ref = NULL, bool mark = false) {
+	return ((uintptr_t)ref & ~mask) | (mark ? 1 : 0);
+}
+// Get the pointer from our MarkableReference
+Node* getReference(uintptr_t val) {
+	return (Node*)(val & ~mask);
+}
+// Get the pointer from our MarkableReference and get our mark
+Node *get(uintptr_t val, bool *mark) {
+	*mark = (val & mask);
+	return (Node*)(val & ~mask);
+}
 
 class Node {
 	public:
@@ -70,7 +66,7 @@ class Node {
 		//T item; // TODO: Try to make this generic if we have the time
 		int item; // Use this int in the meantime
 		int key;
-		atomic<MarkableReference> next;
+		atomic<uintptr_t> next;
 };
 
 class Window {
@@ -88,21 +84,21 @@ class Window {
 
             retry: while(true) {
                 pred = head;
-                curr = pred->next.load().getReference();
+                curr = getReference(pred->next.load());
 
                 while(true) {
-                    succ = curr->next.load().get(&marked);
+                    succ = get(curr->next.load(), &marked);
                     while(marked) {
-                        MarkableReference old = MarkableReference(curr, marked);
-                        MarkableReference altered = MarkableReference(succ, false);
+                        uintptr_t old = MarkableReference(curr, marked);
+                        uintptr_t altered = MarkableReference(succ, false);
                         if(!pred->next.compare_exchange_strong(old, altered))
                             goto retry;
                         delete curr;
                         curr = succ;
-                        succ = curr->next.load().get(&marked);
+                        succ = get(curr->next.load(), &marked);
                     }
 
-                    if(curr -> key >= key)
+                    if(curr->key >= key)
                         return new Window(pred, curr);
                     pred = curr;
                     curr = succ;
@@ -126,12 +122,12 @@ class List {
                 Window *window = Window::find(head, key);
                 Node *pred = window->pred, *curr = window->curr;
 
-                if(curr -> key == key) {
+                if(curr->key == key) {
                     return false;
                 } else {
                     Node *node = new Node(num, curr);
-                    MarkableReference old = MarkableReference(curr, false);
-                    MarkableReference altered = MarkableReference(node, false);
+                    uintptr_t old = MarkableReference(curr, false);
+                    uintptr_t altered = MarkableReference(node, false);
                     if(pred->next.compare_exchange_strong(old, altered))
                         return true;
                     else
@@ -146,16 +142,16 @@ class List {
                 Window *window = Window::find(head, key);
                 Node *pred = window->pred, *curr = window->curr;
 
-                if(curr -> key != key) {
+                if(curr->key != key) {
                     return false;
                 } else {
-                    Node *succ = curr->next.load().getReference();
-                    MarkableReference old = MarkableReference(succ, false);
-                    MarkableReference altered = MarkableReference(succ, true);
+                    Node *succ = getReference(curr->next.load());
+                    uintptr_t old = MarkableReference(succ, false);
+                    uintptr_t altered = MarkableReference(succ, true);
 
                     if(curr->next.compare_exchange_strong(old, altered)) {
-                        MarkableReference old2 = MarkableReference(curr, false);
-                        MarkableReference altered2 = MarkableReference(succ, false);
+                        uintptr_t old2 = MarkableReference(curr, false);
+                        uintptr_t altered2 = MarkableReference(succ, false);
 
                         if(pred->next.compare_exchange_strong(old2, altered2)) {
                             delete curr;
@@ -172,19 +168,17 @@ class List {
             bool marked = false;
             Node *curr = head;
 
-            while(curr -> key < key) {
-                curr = curr -> next.load().getReference();
-                Node *succ = curr -> next.load().get(&marked);
+            while(curr->key < key) {
+                curr = getReference(curr->next.load());
+                Node *succ = get(curr->next.load(), &marked);
             }
 
-            return (curr -> key == key && !marked);
+            return (curr->key == key && !marked);
 		}
 };
 
 List list; // Create our list
 Pool pool; // Create our pool
-
-Mutex lock;
 
 void runThread(int threadNum) {
 	for(int i=0; i<NUM_OPERATIONS/THREAD_COUNT; i++) {
