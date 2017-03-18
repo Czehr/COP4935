@@ -121,6 +121,7 @@ class List {
             while(true) {
                 Window *window = Window::find(head, key);
                 Node *pred = window->pred, *curr = window->curr;
+								delete window;
 
                 if(curr->key == key) {
                     return false;
