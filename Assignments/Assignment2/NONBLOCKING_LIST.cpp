@@ -26,7 +26,7 @@ class Pool {
 			for(int i=0; i<THREAD_COUNT; i++) {
 				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
 					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
-					ints[i][j] = rand()%INT_MAX+INT_MIN; // A random int
+					ints[i][j] = rand()%INT_MAX; // A random int
 				}
 			}
 		}
@@ -141,6 +141,7 @@ class List {
             while(true) {
                 Window *window = Window::find(head, key);
                 Node *pred = window->pred, *curr = window->curr;
+								delete window;
 
                 if(curr->key != key) {
                     return false;
