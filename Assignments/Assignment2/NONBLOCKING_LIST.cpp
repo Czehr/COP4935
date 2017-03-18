@@ -9,7 +9,7 @@ using namespace std;
 
 
 const int THREAD_COUNT = 4;
-const int NUM_OPERATIONS = 20; //33554432; // Total number of operations performed
+const int NUM_OPERATIONS = 200; //33554432; // Total number of operations performed
 const bool DEBUG = true;
 class MarkableReference;
 class Node;
@@ -26,7 +26,7 @@ class Pool {
 			for(int i=0; i<THREAD_COUNT; i++) {
 				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
 					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
-					ints[i][j] = rand()%INT_MAX; // A random int
+					ints[i][j] = rand()%INT_MAX+INT_MIN; // A random int
 				}
 			}
 		}
@@ -177,6 +177,17 @@ class List {
 
             return (curr->key == key && !marked);
 		}
+		void destroyList() {
+			Node *head = this->head;
+			Node *next = getReference(head->next.load());
+			while(getReference(head->next) != NULL) {
+				delete head;
+				head = getReference(head->next.load());
+				next = getReference(head->next.load());
+			}
+			delete head;
+			return;
+		}
 };
 
 List list; // Create our list
@@ -224,5 +235,8 @@ int main(int argc, char *argv[]) {
 	}
 	auto total = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - start); // Get total execution time
 	cout << "Total runtime is " << total.count() << " milliseconds" << endl;
+	
+	list.destroyList();
+	
 	return 0;
 }
