@@ -6,8 +6,8 @@
 #include <cstdlib>
 using namespace std;
 
-const int THREAD_COUNT = 4;
-const int NUM_OPERATIONS = 33554432; // Total number of operations performed
+const int THREAD_COUNT = 64;
+const int NUM_OPERATIONS = 200000; // Total number of operations performed
 const bool DEBUG = false;
 
 class Pool {
@@ -18,6 +18,17 @@ class Pool {
 			srand(time(NULL));
 			for(int i=0; i<THREAD_COUNT; i++) {
 				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
+
+					// double val = (double)rand() / 3;		
+					// int random;
+
+					// if (val < 0.15)		15% insert
+					// 	random = 0;
+					// else if (val < 0.2)	5% 	delete
+					// 	random = 1;
+					// else					80% find
+					// 	random = 2; 
+
 					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
 					ints[i][j] = rand()%INT_MAX; // A random int
 				}
@@ -42,8 +53,8 @@ class Node {
 			key = num%INT_MAX;
 			next = succ;
 		}
-		//T item; // TODO: Try to make this generic if we have the time
-		int item; // Use this int in the meantime
+
+		int item;
 		int key;
 		Node *next;
 };
@@ -58,7 +69,7 @@ class List {
 		}
 		bool add(int num) {
 			Node *pred, *curr;
-			int key = num; // TODO: Number currently hashes to itself. Perhaps this should change
+			int key = num;
 			lock.lock();
 			pred = head;
 			curr = pred->next;
@@ -88,7 +99,7 @@ class List {
 				curr = curr->next;
 			}
 			if(key == curr->key) {
-				delete pred->next; // TODO: Is this correct memory management?
+				delete pred->next; 
 				pred->next = curr->next;
 				lock.unlock();
 				return true;

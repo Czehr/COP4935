@@ -1,6 +1,5 @@
 #include <iostream>
 #include <thread>
-#include <mutex>
 #include <atomic>
 #include <chrono>
 #include <climits>
@@ -8,8 +7,8 @@
 using namespace std;
 
 
-const int THREAD_COUNT = 4;
-const int NUM_OPERATIONS = 33554432; // Total number of operations performed
+const int THREAD_COUNT = 64;
+const int NUM_OPERATIONS = 2000000; // Total number of operations performed
 const bool DEBUG = false;
 class MarkableReference;
 class Node;
@@ -25,6 +24,17 @@ class Pool {
 			srand(time(NULL));
 			for(int i=0; i<THREAD_COUNT; i++) {
 				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
+
+					// double val = (double)rand() / 3;		
+					// int random;
+
+					// if (val < 0.15)		15% insert
+					// 	random = 0;
+					// else if (val < 0.2)	5% 	delete
+					// 	random = 1;
+					// else					80% find
+					// 	random = 2; 
+
 					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
 					ints[i][j] = rand()%INT_MAX; // A random int
 				}
@@ -63,8 +73,8 @@ class Node {
 			key = num;
 			next.store(MarkableReference(succ));
 		}
-		//T item; // TODO: Try to make this generic if we have the time
-		int item; // Use this int in the meantime
+
+		int item;
 		int key;
 		atomic<uintptr_t> next;
 };
@@ -110,7 +120,7 @@ class Window {
 class List {
 	private:
 		Node *head;
-		mutex lock;
+
 	public:
 		List() {
 			head = new Node(INT_MIN, new Node(INT_MAX)); // Create our head and tail, which cannot be destroyed
