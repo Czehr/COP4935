@@ -7,8 +7,8 @@
 using namespace std;
 
 
-const int THREAD_COUNT = 64;
-const int NUM_OPERATIONS = 2000000; // Total number of operations performed
+const int THREAD_COUNT = 8;
+const int NUM_OPERATIONS = 4096; // Total number of operations performed
 const bool DEBUG = false;
 class MarkableReference;
 class Node;
@@ -235,6 +235,10 @@ void runThread(int threadNum) {
 }
 
 int main(int argc, char *argv[]) {
+
+    for(int i = 0; i < 10000; i++)
+        list.add(rand()%INT_MAX);
+
 	thread threads[THREAD_COUNT]; // Create our threads
 	auto start = chrono::system_clock::now(); // Get the time
 	for(long i=0; i<THREAD_COUNT; i++) { // Start our threads
