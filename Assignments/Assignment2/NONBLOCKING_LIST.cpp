@@ -6,28 +6,34 @@
 #include <cstdlib>
 using namespace std;
 
-
-const int THREAD_COUNT = 4;
-const int NUM_OPERATIONS = 4096; // Total number of operations performed
+// Following three are adjustable to run the program
+// with different sets of functionality
+const int THREAD_COUNT = 64;
+const int NUM_OPERATIONS = 200000;
 const bool DEBUG = false;
+
 class MarkableReference;
 class Node;
 class Pool;
 class Window;
 class List;
+
 static Node* getNode(int, int, int, Node*);
 static Window* getWindow(Node*, Node*, int);
 
 // MarkableReference functions
 static const uintptr_t mask = 1; // This mask is used to properly store our mark
+
 // Take a pointer and a mark and pack them into one pointer
 uintptr_t MarkableReference(Node *ref = NULL, bool mark = false) {
 	return ((uintptr_t)ref & ~mask) | (mark ? 1 : 0);
 }
+
 // Get the pointer from our MarkableReference
 Node* getReference(uintptr_t val) {
 	return (Node*)(val & ~mask);
 }
+
 // Get the pointer from our MarkableReference and get our mark
 Node *get(uintptr_t val, bool *mark) {
 	*mark = (val & mask);
@@ -36,6 +42,10 @@ Node *get(uintptr_t val, bool *mark) {
 
 class Node {
 	public:
+		int item;
+		int key;
+		atomic<uintptr_t> next;
+
 		Node() {
 			item = INT_MIN+1;
 			key = item;
@@ -49,10 +59,6 @@ class Node {
 			key = num;
 			next.store(MarkableReference(succ));
 		}
-
-		int item;
-		int key;
-		atomic<uintptr_t> next;
 };
 
 class Window {
@@ -105,12 +111,15 @@ class Pool {
 		Node *nodes[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
 		Window *windows[THREAD_COUNT];
 
-		Pool() { // Initialize our random bits and ints
+		// Initialize our random bits and ints
+		Pool() {
 			srand(time(NULL));
 			for(int i=0; i<THREAD_COUNT; i++) {
 				windows[i] = new Window();
 				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
 
+					// The following commented lines will enable probability functionalities
+					// for operations to be performed.
 					// double val = (double)rand() / 3;		
 					// int random;
 
@@ -124,7 +133,7 @@ class Pool {
 					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
 					if(bits[i][j] == 0)
 						nodes[i][j] = new Node();
-					ints[i][j] = rand()%INT_MAX; // A random int
+					ints[i][j] = rand()%INT_MAX;
 				}
 			}
 		}
@@ -133,18 +142,17 @@ class Pool {
 class List {
 	private:
 		Node *head;
-
 	public:
 		List() {
 			head = new Node(INT_MIN, new Node(INT_MAX)); // Create our head and tail, which cannot be destroyed
 		}
+
 		bool add(int num, int threadNum, int operationNum) {
             int key = num;
 
             while(true) {
                 Window *window = Window::find(head, key, threadNum);
                 Node *pred = window->pred, *curr = window->curr;
-								//delete window;
 
                 if(curr->key == key) {
                     return false;
@@ -154,11 +162,10 @@ class List {
                     uintptr_t altered = MarkableReference(node, false);
                     if(pred->next.compare_exchange_strong(old, altered))
                         return true;
-                    //else
-                        //delete node;
                 }
             }
 		}
+
 		bool remove(int num, int threadNum) {
             int key = num;
 
@@ -178,9 +185,8 @@ class List {
                         uintptr_t old2 = MarkableReference(curr, false);
                         uintptr_t altered2 = MarkableReference(succ, false);
 
-                        if(pred->next.compare_exchange_strong(old2, altered2)) {
-                            //delete curr;
-                        }
+                        // if(pred->next.compare_exchange_strong(old2, altered2))
+                        //     delete curr;
 
                         return true;
                     }
@@ -199,17 +205,6 @@ class List {
             }
 
             return (curr->key == key && !marked);
-		}
-		void destroyList() {
-			Node *head = this->head;
-			Node *next = getReference(head->next.load());
-			while(getReference(head->next) != NULL) {
-				delete head;
-				head = getReference(head->next.load());
-				next = getReference(head->next.load());
-			}
-			delete head;
-			return;
 		}
 };
 
@@ -273,8 +268,6 @@ int main(int argc, char *argv[]) {
 	}
 	auto total = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - start); // Get total execution time
 	cout << "Total runtime is " << total.count() << " milliseconds" << endl;
-	
-	//list.destroyList();
 	
 	return 0;
 }
