@@ -6,38 +6,24 @@
 #include <cstdlib>
 using namespace std;
 
-const int THREAD_COUNT = 64;
-const int NUM_OPERATIONS = 200000; // Total number of operations performed
+// Following three are adjustable to run the program
+// with different sets of functionality
+const int THREAD_COUNT = 64; 
+const int NUM_OPERATIONS = 200000;
 const bool DEBUG = false;
 
-class Pool {
-	public:
-		unsigned char bits[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
-		int ints[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
-		Pool() { // Initialize our random bits and ints
-			srand(time(NULL));
-			for(int i=0; i<THREAD_COUNT; i++) {
-				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
+class Node;
+class Pool;
+class List;
 
-					// double val = (double)rand() / 3;		
-					// int random;
-
-					// if (val < 0.15)		15% insert
-					// 	random = 0;
-					// else if (val < 0.2)	5% 	delete
-					// 	random = 1;
-					// else					80% find
-					// 	random = 2; 
-
-					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
-					ints[i][j] = rand()%INT_MAX; // A random int
-				}
-			}
-		}
-};
+static Node* getNode(int, int, int, Node*);
 
 class Node {
 	public:
+		int item;
+		int key;
+		Node *next;
+
 		Node() {
 			item = INT_MIN+1;
 			key = item;
@@ -53,10 +39,39 @@ class Node {
 			key = num%INT_MAX;
 			next = succ;
 		}
+};
 
-		int item;
-		int key;
-		Node *next;
+class Pool {
+	public:
+		unsigned char bits[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
+		int ints[THREAD_COUNT][NUM_OPERATIONS / THREAD_COUNT];
+		Node *nodes[THREAD_COUNT][NUM_OPERATIONS / THREAD_COUNT];
+
+		// Initialize our random bits and ints
+		Pool() {
+			srand(time(NULL));
+			for(int i=0; i<THREAD_COUNT; i++) {
+				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
+
+					// The following commented lines will enable probability functionalities
+					// for operations to be performed.
+					// double val = (double)rand() / 3;		
+					// int random;
+
+					// if (val < 0.15)		15% insert
+					// 	random = 0;
+					// else if (val < 0.2)	5% 	delete
+					// 	random = 1;
+					// else					80% find
+					// 	random = 2; 
+
+					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
+					if(bits[i][j] == 0)
+						nodes[i][j] = new Node();
+					ints[i][j] = rand()%INT_MAX;
+				}
+			}
+		}
 };
 
 class List {
@@ -67,7 +82,8 @@ class List {
 		List() {
 			head = new Node(INT_MIN, new Node(INT_MAX)); // Create our head and tail, which cannot be destroyed
 		}
-		bool add(int num) {
+
+		bool add(int num, int threadNum, int operationNum) {
 			Node *pred, *curr;
 			int key = num;
 			lock.lock();
@@ -81,25 +97,25 @@ class List {
 				lock.unlock();
 				return false;
 			} else {
-				Node *node = new Node(num);
-				node->next = curr;
-				pred->next = node;
+				Node *node = getNode(threadNum, operationNum, num, curr);
 				lock.unlock();
 				return true;
 			}
 		}
-		bool remove(int num) {
+
+		bool remove(int num, int threadNum) {
 			Node *pred, *curr;
 			int key = num;
 			lock.lock();
 			pred = head;
 			curr = pred->next;
+
 			while(curr->key < key) {
 				pred = curr;
 				curr = curr->next;
 			}
+
 			if(key == curr->key) {
-				delete pred->next; 
 				pred->next = curr->next;
 				lock.unlock();
 				return true;
@@ -108,6 +124,7 @@ class List {
 				return false;
 			}
 		}
+
 		bool contains(int num) {
 			Node *pred, *curr;
 			int key = num;
@@ -131,18 +148,26 @@ class List {
 List list; // Create our list
 Pool pool; // Create our pool
 
+static Node* getNode(int threadNum, int operationNum, int num, Node *succ) {
+	Node *node = pool.nodes[threadNum][operationNum];
+	node->item = num;
+	node->key = num;
+	node->next = succ;
+	return node;
+}
+
 void runThread(int threadNum) {
 	for(int i=0; i<NUM_OPERATIONS/THREAD_COUNT; i++) {
 		switch(pool.bits[threadNum][i]) {
 			case 0:
-				if(list.add(pool.ints[threadNum][i])) {
+				if(list.add(pool.ints[threadNum][i], threadNum, i)) {
 					if(DEBUG) cout << "Inserted " << pool.ints[threadNum][i] << endl;
 				} else {
 					if(DEBUG) cout << "Failed to insert " << pool.ints[threadNum][i] << " (Already in the set)" << endl;
 				}
 				break;
 			case 1:
-				if(list.remove(pool.ints[threadNum][i])) {
+				if(list.remove(pool.ints[threadNum][i], threadNum)) {
 					if(DEBUG) cout << "Removed" << pool.ints[threadNum][i] << endl;
 				} else {
 					if(DEBUG) cout << "Failed to remove " << pool.ints[threadNum][i] << " (Not in the set)" << endl;
@@ -163,6 +188,7 @@ void runThread(int threadNum) {
 }
 
 int main(int argc, char *argv[]) {
+	
 	thread threads[THREAD_COUNT]; // Create our threads
 	auto start = chrono::system_clock::now(); // Get the time
 	for(long i=0; i<THREAD_COUNT; i++) { // Start our threads
