@@ -90,7 +90,7 @@ class Window {
                         uintptr_t altered = MarkableReference(succ, false);
                         if(!pred->next.compare_exchange_strong(old, altered))
                             goto retry;
-                        //delete curr;
+
                         curr = succ;
                         succ = get(curr->next.load(), &marked);
                     }
@@ -123,11 +123,11 @@ class Pool {
 					// double val = (double)rand() / 3;		
 					// int random;
 
-					// if (val < 0.15)		15% insert
+					// if (val < 0.15)		// 15% insert
 					// 	random = 0;
-					// else if (val < 0.2)	5% 	delete
+					// else if (val < 0.2)	// 5% 	delete
 					// 	random = 1;
-					// else					80% find
+					// else				//	80% find
 					// 	random = 2; 
 
 					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
@@ -172,7 +172,6 @@ class List {
             while(true) {
                 Window *window = Window::find(head, key, threadNum);
                 Node *pred = window->pred, *curr = window->curr;
-				//delete window;
 
                 if(curr->key != key) {
                     return false;
@@ -184,9 +183,6 @@ class List {
                     if(curr->next.compare_exchange_strong(old, altered)) {
                         uintptr_t old2 = MarkableReference(curr, false);
                         uintptr_t altered2 = MarkableReference(succ, false);
-
-                        // if(pred->next.compare_exchange_strong(old2, altered2))
-                        //     delete curr;
 
                         return true;
                     }

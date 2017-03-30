@@ -58,11 +58,11 @@ class Pool {
 					// double val = (double)rand() / 3;		
 					// int random;
 
-					// if (val < 0.15)		15% insert
+					// if (val < 0.15)		// 15% insert
 					// 	random = 0;
-					// else if (val < 0.2)	5% 	delete
+					// else if (val < 0.2)	// 5% 	delete
 					// 	random = 1;
-					// else					80% find
+					// else				// 80% find
 					// 	random = 2; 
 
 					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
@@ -98,12 +98,13 @@ class List {
 				return false;
 			} else {
 				Node *node = getNode(threadNum, operationNum, num, curr);
+				pred->next = node;
 				lock.unlock();
 				return true;
 			}
 		}
 
-		bool remove(int num, int threadNum) {
+		bool remove(int num) {
 			Node *pred, *curr;
 			int key = num;
 			lock.lock();
@@ -167,15 +168,15 @@ void runThread(int threadNum) {
 				}
 				break;
 			case 1:
-				if(list.remove(pool.ints[threadNum][i], threadNum)) {
-					if(DEBUG) cout << "Removed" << pool.ints[threadNum][i] << endl;
+				if(list.remove(pool.ints[threadNum][i])) {
+					if(DEBUG) cout << "Removed " << pool.ints[threadNum][i] << endl;
 				} else {
 					if(DEBUG) cout << "Failed to remove " << pool.ints[threadNum][i] << " (Not in the set)" << endl;
 				}
 				break;
 			case 2:
 				if(list.contains(pool.ints[threadNum][i])) {
-					if(DEBUG) cout << "Found" << pool.ints[threadNum][i] << endl;
+					if(DEBUG) cout << "Found " << pool.ints[threadNum][i] << endl;
 				} else {
 					if(DEBUG) cout << "Did not find " << pool.ints[threadNum][i] << endl;
 				}
