@@ -54,7 +54,7 @@ class Pool {
 				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
 
 					// The following commented lines will enable probability functionalities
-					// for operations to be performed.
+					// for operations to be performed 
                     int x = rand() % 100;
                     int random;
                     
