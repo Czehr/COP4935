@@ -120,17 +120,17 @@ class Pool {
 
 					// The following commented lines will enable probability functionalities
 					// for operations to be performed.
-					// double val = (double)rand() / 3;		
-					// int random;
+					 int x = rand() % 100;
+					 int random;
 
-					// if (val < 0.15)		// 15% insert
-					// 	random = 0;
-					// else if (val < 0.2)	// 5% 	delete
-					// 	random = 1;
-					// else				//	80% find
-					// 	random = 2; 
+					 if (x < 15)            // 15% insert
+					 	random = 0;
+					 else if (x < 20)       // 5% 	delete
+					 	random = 1;
+					 else                   //	80% find
+					 	random = 2;
 
-					bits[i][j] = (unsigned char)rand()%3; // 0=insert,1=delete,2=find
+					bits[i][j] = (unsigned char)random;// 0=insert,1=delete,2=find
 					if(bits[i][j] == 0)
 						nodes[i][j] = new Node();
 					ints[i][j] = rand()%INT_MAX;
