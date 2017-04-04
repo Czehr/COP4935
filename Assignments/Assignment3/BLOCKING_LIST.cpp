@@ -9,7 +9,7 @@ using namespace std;
 // Following three are adjustable to run the program
 // with different sets of functionality
 const int THREAD_COUNT = 64;
-const int NUM_OPERATIONS = 100000;
+const int NUM_OPERATIONS = 200000;
 const bool DEBUG = false;
 
 class Node;
@@ -54,17 +54,17 @@ class Pool {
 				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
 
 					// The following commented lines will enable probability functionalities
-					// for operations to be performed
+					// for operations to be performed 
                     int x = rand() % 100;
                     int random;
-
+                    
                     if (x < 15)            // 15% insert
                         random = 0;
                     else if (x < 20)       // 5% 	delete
                         random = 1;
                     else                   //	80% find
                         random = 2;
-
+                    
                     bits[i][j] = (unsigned char)random; // 0=insert,1=delete,2=find
 					if(bits[i][j] == 0)
 						nodes[i][j] = new Node();
@@ -189,7 +189,7 @@ void runThread(int threadNum) {
 }
 
 int main(int argc, char *argv[]) {
-
+	
 	thread threads[THREAD_COUNT]; // Create our threads
 	auto start = chrono::system_clock::now(); // Get the time
 	for(long i=0; i<THREAD_COUNT; i++) { // Start our threads
