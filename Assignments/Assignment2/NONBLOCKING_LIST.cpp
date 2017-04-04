@@ -183,11 +183,7 @@ class List {
                     if(curr->next.compare_exchange_strong(old, altered)) {
                         uintptr_t old2 = MarkableReference(curr, false);
                         uintptr_t altered2 = MarkableReference(succ, false);
-<<<<<<< HEAD
-
-=======
 												pred->next.compare_exchange_strong(old2, altered2);
->>>>>>> Assignment3
                         return true;
                     }
                 }
