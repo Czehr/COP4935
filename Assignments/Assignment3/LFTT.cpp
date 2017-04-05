@@ -140,3 +140,44 @@ bool insert(int key, Desc* desc, int opid) {
 		}
 	}
 }
+
+bool find(int key, Desc* desc, int opid){
+	NodeInfo* info = new NodeInfo;
+	info.desc = desc;
+	info.opid = opid;
+	Status ret;
+	while(true){
+		Node* curr = do_locatePred(key);
+		if(isNodePresent(curr, key))
+			ret = updateInfo(curr, info, true)
+		else
+			ret = fail;
+		if (ret == success)
+			return true;
+		else if (ret == fail)
+			return false;
+	}
+}
+
+bool deleteNode(int key, Desc* desc, int opid, Node* del){
+	NodeInfo* info = new NodeInfo;
+	info.desc = desc;
+	info.opid = opid;
+	Status ret;
+	while(true){
+		Node* curr = do_locatePred(key);
+		if (isNodePresent(curr, key))
+			ret = updateInfo(curr, info, true);
+		else
+			ret = fail;
+		if (ret == success){
+			del = curr;
+			return true;
+		}
+		else if(ret == fail){
+			del == NULL;
+			return false;
+		}
+	}
+}
+

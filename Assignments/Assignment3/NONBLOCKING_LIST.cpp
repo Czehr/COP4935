@@ -147,6 +147,23 @@ class List {
 			head = new Node(INT_MIN, new Node(INT_MAX)); // Create our head and tail, which cannot be destroyed
 		}
 
+		Node* locatePred(int key, int threadNum)
+		{
+			Window *window = Window::find(head, key, threadNum);
+			return window->curr;
+		}
+
+		bool insert(Node* n, int threadNum, int operationNum)
+		{
+
+			return add(n->key, threadNum, operationNum);
+		}
+
+		void deleteNode(Node del, int threadnum)
+		{
+			remove(del.key, threadnum);
+		}
+
 		bool add(int num, int threadNum, int operationNum) {
             int key = num;
 
