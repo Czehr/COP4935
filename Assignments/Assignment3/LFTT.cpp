@@ -4,6 +4,7 @@
 #include <chrono>
 #include <climits>
 #include <cstdlib>
+#include <assert.h>
 using namespace std;
 
 enum Status { // Statuses a function can be in
@@ -43,6 +44,34 @@ struct NodeInfo { // Node Information
 struct Node {
 	NodeInfo* info;
 	int key;
+}
+
+struct HelpStack
+{
+	int index;
+	Desc* descriptors[256];
+
+	void init(){
+		index = 0;
+	}
+
+	void push(Desc* desc){
+		assert(index < 255);
+		descriptors[index++] = desc;
+	}
+
+	void Pop(){
+		assert(index > 0);
+		index--;
+	}
+
+	bool contains(Desc* desc){
+		for(int i = 0; i < index; i++){
+			if(descriptors[i] == desc)
+				return true;
+		}
+		return false;
+	}
 }
 
 // MarkableReference functions
