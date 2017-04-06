@@ -35,17 +35,17 @@ struct Desc { // Descriptor
 	int size;
 	TxStatus status;
 	Operation ops[];
-}
+};
 
 struct NodeInfo { // Node Information
 	Desc* desc;
 	int opid;
-}
+};
 
 struct Node {
 	NodeInfo* info;
 	int key;
-}
+};
 
 struct HelpStack
 {
@@ -73,6 +73,19 @@ struct HelpStack
 		}
 		return false;
 	}
+};
+
+//Placeholders for "do_" functions
+void do_locatePred(Node*& pred, Node*& curr, uint32_t key){
+	return;
+}
+
+bool do_insert(uint32_t key, Desc* desc, uint8_t opid, Node*& inserted, Node*& pred){
+	return true;
+}
+
+void do_delete(uint32_t key, Desc* desc, uint8_t opid, Node*& deleted, Node*& pred){
+	return;
 }
 
 // MarkableReference functions
@@ -89,55 +102,55 @@ Node* getReference(uintptr_t val) {
 }
 
 // Return whether a MarkableReference is marked or not
-bool isMarked(uintptr_t val) {
+bool isMarked(NodeInfo* val) {
 	return (val & mask);
 }
 
 // Get the pointer from our MarkableReference and get our mark
-Node *get(uintptr_t val, bool *mark) {
+Node *get(NodeInfo* val, bool *mark) {
 	*mark = isMarked(val);
 	return (Node*)(val & ~mask);
 }
 
-isNodePresent(Node* n, int key) {
-	return n.key == key;
+bool isNodePresent(Node* n, int key) {
+	return n->key == key;
 }
 
 bool isKeyPresent(NodeInfo* info, Desc* desc) {
-	OpType op = info.desc.ops[info.opid];
-	TxStatus status = info.desc.status;
+	OpType op = info->desc->ops[info->opid].type;
+	TxStatus status = info->desc->status;
 	switch(status) {
-		case: Active
-			if(info.desc==desc)
+		case Active:
+			if(info->desc==desc)
 				return op == Find || op == Insert;
 			else
 				return op == Find || op == Delete;
-		case: Comitted
-			return op == Find || op = Insert;
-		case: Aborted
+		case Comitted:
+			return op == Find || op == Insert;
+		case Aborted:
 			return op == Find || op == Delete;
 	}
 }
 
 Status updateInfo(Node* n, NodeInfo* info, bool wantKey) {
-	NodeInfo* oldinfo = n.info;
+	NodeInfo* oldinfo = n->info;
 	if(isMarked(oldinfo)) {
 		do_delete(n); // TODO: Find a way to call the normal delete here
 		return retry;
 	}
-	if(oldinfo.desc != info.desc) {
-		executeOps(oldinfo.desc, oldinfo.opid + 1);
-	} else if(oldinfo.opid >= info.opid) {
+	if(oldinfo->desc != info->desc) {
+		executeOps(oldinfo->desc, oldinfo->opid + 1);
+	} else if(oldinfo->opid >= info->opid) {
 		return success;
 	}
 	bool hasKey = isKeyPresent(oldinfo); // TODO: What descriptor do we pass in isKeyPresent? Should have second argument
-	if((!hasKey && wantKey) || (hasKey && !wantKey) {
+	if((!hasKey && wantKey) || (hasKey && !wantKey)) {
 		return fail;
 	}
-	if(info.desc.status != Active) {
+	if(info->desc->status != Active) {
 		return fail;
 	}
-	if(n.info.compare_exchange_strong(oldinfo, info)) {
+	if(n->info->compare_exchange_strong(oldinfo, info)) {
 		return success;
 	} else {
 		return retry;
@@ -146,8 +159,8 @@ Status updateInfo(Node* n, NodeInfo* info, bool wantKey) {
 
 bool insert(int key, Desc* desc, int opid) {
 	NodeInfo* info = new NodeInfo;
-	info.desc = desc;
-	info.opid = opid;
+	info->desc = desc;
+	info->opid = opid;
 	Status ret;
 	while(true) {
 		Node* curr = do_locatePred(key);
@@ -155,26 +168,23 @@ bool insert(int key, Desc* desc, int opid) {
 			ret = updateInfo(curr, info, false);
 		} else {
 			Node* n = new Node;
-			n.key = key;
-			n.info = info;
+			n->key = key;
+			n->info = info;
 			bool insRet = do_insert(n);
-			if(intRet)
+			if(insRet)
 				ret = success;
 			else
 				ret = fail;
 		}
-		if(ret == success) {
-			return true;
-		if(ret == fail) {
-			return false;
-		}
+		if(ret == success) return true;
+		if(ret == fail) return false;
 	}
 }
 
 bool find(int key, Desc* desc, int opid){
 	NodeInfo* info = new NodeInfo;
-	info.desc = desc;
-	info.opid = opid;
+	info->desc = desc;
+	info->opid = opid;
 	Status ret;
 	while(true){
 		Node* curr = do_locatePred(key);
@@ -182,17 +192,15 @@ bool find(int key, Desc* desc, int opid){
 			ret = updateInfo(curr, info, true)
 		else
 			ret = fail;
-		if (ret == success)
-			return true;
-		else if (ret == fail)
-			return false;
+		if(ret == success) return true;
+		if(ret == fail) return false;
 	}
 }
 
 bool deleteNode(int key, Desc* desc, int opid, Node* del){
 	NodeInfo* info = new NodeInfo;
-	info.desc = desc;
-	info.opid = opid;
+	info->desc = desc;
+	info->opid = opid;
 	Status ret;
 	while(true){
 		Node* curr = do_locatePred(key);
@@ -204,7 +212,7 @@ bool deleteNode(int key, Desc* desc, int opid, Node* del){
 			del = curr;
 			return true;
 		}
-		else if(ret == fail){
+		if(ret == fail){
 			del == NULL;
 			return false;
 		}
@@ -215,30 +223,13 @@ void markDelete(set<Node> delnodes, Desc* desc){
 	for (set<Node>::iterator del = delnodes.begin(); del!=delnodes.end(); ++i){
 		if (del == NULL)
 			continue;
-		NodeInfo* info = del.info;
-		if (info.desc != desc)
+		NodeInfo* info = del->info;
+		if (info->desc != desc)
 			continue;
 
 		uintptr_t old = MarkableReference(del, false);
         uintptr_t altered = MarkableReference(del, true);
-		if(del.compare_exchange_strong(old, altered))
+		if(del->compare_exchange_strong(old, altered))
 			do_delete(del);
 	}
-}
-
-
-
-//Placeholders for "do_" functions
-
-Node* do_locatePred(key){
-	Node temp;
-	return &temp;
-}
-
-bool do_insert(Node* n){
-	return true;
-}
-
-void do_delete(Node del){
-
 }
