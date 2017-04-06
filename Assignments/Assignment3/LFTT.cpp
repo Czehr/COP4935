@@ -5,6 +5,7 @@
 #include <climits>
 #include <cstdlib>
 #include <assert.h>
+#include <set>
 using namespace std;
 
 enum Status { // Statuses a function can be in
@@ -210,3 +211,34 @@ bool deleteNode(int key, Desc* desc, int opid, Node* del){
 	}
 }
 
+void markDelete(set<Node> delnodes, Desc* desc){
+	for (set<Node>::iterator del = delnodes.begin(); del!=delnodes.end(); ++i){
+		if (del == NULL)
+			continue;
+		NodeInfo* info = del.info;
+		if (info.desc != desc)
+			continue;
+
+		uintptr_t old = MarkableReference(del, false);
+        uintptr_t altered = MarkableReference(del, true);
+		if(del.compare_exchange_strong(old, altered))
+			do_delete(del);
+	}
+}
+
+
+
+//Placeholders for "do_" functions
+
+Node* do_locatePred(key){
+	Node temp;
+	return &temp;
+}
+
+bool do_insert(Node* n){
+	return true;
+}
+
+void do_delete(Node del){
+
+}
