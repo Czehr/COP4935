@@ -4,12 +4,13 @@
 #include <chrono>
 #include <climits>
 #include <cstdlib>
+#include "LFTT.h"
 using namespace std;
 
 // Following three are adjustable to run the program
 // with different sets of functionality
-const int THREAD_COUNT = 64;
-const int NUM_OPERATIONS = 200000;
+const int THREAD_COUNT = 4;
+const int NUM_OPERATIONS = 2000;
 const bool DEBUG = false;
 
 class MarkableReference;
@@ -40,10 +41,32 @@ Node *get(uintptr_t val, bool *mark) {
 	return (Node*)(val & ~mask);
 }
 
+// Return whether a MarkableReference is marked or not
+bool isMarked(NodeInfo* val) {
+	return ((long)val & 1);
+}
+
+//Additional LFTT functionality
+
+/*Placeholders for "do_" functions
+void do_locatePred(Node*& pred, Node*& curr, uint32_t key){
+	return;
+}
+
+bool do_insert(uint32_t key, Desc* desc, uint8_t opid, Node*& inserted, Node*& pred){
+	return true;
+}
+
+void do_delete(uint32_t key, Desc* desc, uint8_t opid, Node*& deleted, Node*& pred){
+	return;
+}*/
+
+
 class Node {
 	public:
 		int item;
 		int key;
+		atomic<NodeInfo*> info; //Points to NodeInfo struct
 		atomic<uintptr_t> next;
 
 		Node() {
@@ -147,24 +170,69 @@ class List {
 			head = new Node(INT_MIN, new Node(INT_MAX)); // Create our head and tail, which cannot be destroyed
 		}
 
-		Node* locatePred(int key, int threadNum)
+		Node* findNode(int key, int threadNum)
 		{
 			Window *window = Window::find(head, key, threadNum);
 			return window->curr;
 		}
 
-		bool insert(Node* n, int threadNum, int operationNum)
+		bool insertNode(int key, int threadNum, int operationNum)
 		{
 
-			return add(n->key, threadNum, operationNum);
+			return do_insert(key, threadNum, operationNum);
 		}
 
-		void deleteNode(Node del, int threadnum)
+		bool deleteNode(int key, int threadnum)
 		{
-			remove(del.key, threadnum);
+			do_delete(key, threadnum);
 		}
 
-		bool add(int num, int threadNum, int operationNum) {
+		bool isNodePresent(Node* n, int key) {
+			return n->key == key;
+		}
+
+		bool isKeyPresent(NodeInfo* info, Desc* desc) {
+		OpType op = info->desc->ops[info->opid].type;
+		TxStatus status = info->desc->status;
+		switch(status) {
+			case Active:
+				if(info->desc==desc)
+					return op == Find || op == Insert;
+				else
+					return op == Find || op == Delete;
+			case Comitted:
+				return op == Find || op == Insert;
+			case Aborted:
+				return op == Find || op == Delete;
+			}
+		}
+
+		Status updateInfo(Node* n, NodeInfo* info, bool wantKey, int threadnum) {
+			NodeInfo* oldinfo = n->info.load();
+			if(isMarked(oldinfo)) {
+				do_delete(n->key, threadnum); // TODO: Find a way to call the normal delete here
+				return retry;
+			}
+			if(oldinfo->desc != info->desc) {
+				executeOps(oldinfo->desc, oldinfo->opid + 1);
+			} else if(oldinfo->opid >= info->opid) {
+				return success;
+			}
+			bool hasKey = isKeyPresent(oldinfo, oldinfo->desc); // TODO: What descriptor do we pass in isKeyPresent? Should have second argument
+			if((!hasKey && wantKey) || (hasKey && !wantKey)) {
+				return fail;
+			}
+			if(info->desc->status != Active) {
+				return fail;
+			}
+			if(n->info.compare_exchange_strong(oldinfo, info)) {
+				return success;
+			} else {
+				return retry;
+			}
+		}
+
+		bool do_insert(int num, int threadNum, int operationNum) {
             int key = num;
 
             while(true) {
@@ -183,7 +251,7 @@ class List {
             }
 		}
 
-		bool remove(int num, int threadNum) {
+		bool do_delete(int num, int threadNum) {
             int key = num;
 
             while(true) {
@@ -207,7 +275,7 @@ class List {
             }
 		}
 
-		bool contains(int num) {
+		bool do_locatePred(int num) {
             int key = num;
             bool marked = false;
             Node *curr = head;
@@ -242,21 +310,21 @@ void runThread(int threadNum) {
 	for(int i=0; i<NUM_OPERATIONS/THREAD_COUNT; i++) {
 		switch(pool.bits[threadNum][i]) {
 			case 0:
-				if(list.add(pool.ints[threadNum][i], threadNum, i)) {
+				if(list.insertNode(pool.ints[threadNum][i], threadNum, i)) {
 					if(DEBUG)  cout << "Inserted " << pool.ints[threadNum][i] << endl;
 				} else {
 					if(DEBUG) cout << "Failed to insert " << pool.ints[threadNum][i] << " (Already in the set)" << endl;
 				}
 				break;
 			case 1:
-				if(list.remove(pool.ints[threadNum][i], threadNum)) {
+				if(list.deleteNode(pool.ints[threadNum][i], threadNum)) {
 					if(DEBUG) cout << "Removed" << pool.ints[threadNum][i] << endl;
 				} else {
 					if(DEBUG) cout << "Failed to remove " << pool.ints[threadNum][i] << " (Not in the set)" << endl;
 				}
 				break;
 			case 2:
-				if(list.contains(pool.ints[threadNum][i])) {
+				if(list.findNode(pool.ints[threadNum][i], threadNum) ){
 					if(DEBUG) cout << "Found" << pool.ints[threadNum][i] << endl;
 				} else {
 					if(DEBUG) cout << "Did not find " << pool.ints[threadNum][i] << endl;
@@ -268,6 +336,13 @@ void runThread(int threadNum) {
 		}
 	}
 }
+
+
+
+
+
+
+
 
 int main(int argc, char *argv[]) {
 
