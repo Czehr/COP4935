@@ -4,6 +4,7 @@
 #include <chrono>
 #include <climits>
 #include <cstdlib>
+#include <set>
 #include "LFTT.h"
 using namespace std;
 
@@ -165,6 +166,9 @@ class Pool {
 class List {
 	private:
 		Node *head;
+		HelpStack helpstack;
+
+
 	public:
 		List() {
 			head = new Node(INT_MIN, new Node(INT_MAX)); // Create our head and tail, which cannot be destroyed
@@ -230,6 +234,35 @@ class List {
 			} else {
 				return retry;
 			}
+		}
+
+		void executeOps(Desc* desc, int opid){
+			 bool ret = true;
+			 set<Node>::iterator del;
+			 helpstack.init();
+
+			 if(helpstack.contains(desc)){
+			 	//compare and swap
+			 }
+
+			 helpstack.push(desc);
+
+			 while((desc->status == Active) && ret && (opid < desc->size)){
+
+			 	Operation& op = desc->ops[opid];
+
+			 	switch (op.type){
+			 		case Insert:
+
+			 		case Delete:
+
+			 		case Find:
+			 		break;
+			 	}
+
+			 	break;
+
+			 }
 		}
 
 		bool do_insert(int num, int threadNum, int operationNum) {
