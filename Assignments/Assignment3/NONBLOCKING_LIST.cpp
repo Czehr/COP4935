@@ -174,19 +174,21 @@ class List {
 			head = new Node(INT_MIN, new Node(INT_MAX)); // Create our head and tail, which cannot be destroyed
 		}
 
-		Node* findNode(int key, int threadNum)
+		Node* findNode(int key, Desc* desc, int opid, int threadNum)
 		{
 			Window *window = Window::find(head, key, threadNum);
 			return window->curr;
 		}
 
-		bool insertNode(int key, int threadNum, int operationNum)
+		bool insertNode(int key, Desc* desc, int opid, int threadNum, int operationNum)
 		{
+			NodeInfo* info = new NodeInfo;
+			//info->desc = 
 
 			return do_insert(key, threadNum, operationNum);
 		}
 
-		bool deleteNode(int key, int threadnum)
+		bool deleteNode(int key, Desc* desc, int opid, int threadnum)
 		{
 			do_delete(key, threadnum);
 		}
@@ -211,14 +213,14 @@ class List {
 			}
 		}
 
-		Status updateInfo(Node* n, NodeInfo* info, bool wantKey, int threadnum) {
+		Status updateInfo(Node* n, NodeInfo* info, bool wantKey, int threadnum, int operationNum) {
 			NodeInfo* oldinfo = n->info.load();
 			if(isMarked(oldinfo)) {
 				do_delete(n->key, threadnum); // TODO: Find a way to call the normal delete here
 				return retry;
 			}
 			if(oldinfo->desc != info->desc) {
-				executeOps(oldinfo->desc, oldinfo->opid + 1);
+				executeOps(oldinfo->desc, oldinfo->opid + 1, threadnum, operationNum);
 			} else if(oldinfo->opid >= info->opid) {
 				return success;
 			}
@@ -236,9 +238,13 @@ class List {
 			}
 		}
 
-		void executeOps(Desc* desc, int opid){
+		bool executeTransaction(Desc* desc){
+			ExecuteOps(desc, 0, 0, 0);
+			return (desc.status == Comitted);
+		}
+
+		void executeOps(Desc* desc, int opid, int threadnum, int operationNum){
 			 bool ret = true;
-			 set<Node>::iterator del;
 			 helpstack.init();
 
 			 if(helpstack.contains(desc)){
@@ -253,17 +259,25 @@ class List {
 
 			 	switch (op.type){
 			 		case Insert:
-
+			 			ret = insertNode(op.key, desc, opid, threadnum, operationNum);
+			 			break;
 			 		case Delete:
-
+			 			ret = deleteNode(op.key, desc, opid, threadnum);
+			 			break;
 			 		case Find:
-			 		break;
-			 	}
+			 			ret = findNode(op.key, desc, opid, threadnum);
+			 			break;
 
-			 	break;
+			 	};
+
+			 	opid++;
 
 			 }
+
+			 helpstack.pop();
 		}
+
+
 
 		bool do_insert(int num, int threadNum, int operationNum) {
             int key = num;
@@ -340,6 +354,7 @@ static Window* getWindow(Node *myPred, Node *myCurr, int threadNum) {
 }
 
 void runThread(int threadNum) {
+
 	for(int i=0; i<NUM_OPERATIONS/THREAD_COUNT; i++) {
 		switch(pool.bits[threadNum][i]) {
 			case 0:
