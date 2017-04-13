@@ -10,8 +10,9 @@ using namespace std;
 
 // Following three are adjustable to run the program
 // with different sets of functionality
-const int THREAD_COUNT = 4;
-const int NUM_OPERATIONS = 2000;
+const int THREAD_COUNT = 2;
+const int TRANSACTION_COUNT = 50000;
+const int NUM_OPERATIONS = 20000;
 const bool DEBUG = false;
 
 class MarkableReference;
@@ -21,6 +22,7 @@ class Window;
 class List;
 
 static Node* getNode(int, int, int, Node*);
+static Node* getNode2(int, int, int, int, Node*);
 static Window* getWindow(Node*, Node*, int);
 
 // MarkableReference functions
@@ -133,6 +135,8 @@ class Pool {
 		unsigned char bits[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
 		int ints[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
 		Node *nodes[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
+		Node *transactionNodes[THREAD_COUNT][TRANSACTION_COUNT][OPERATIONS_PER_TRANSACTION];
+		Desc *transactions[THREAD_COUNT][TRANSACTION_COUNT/THREAD_COUNT];
 		Window *windows[THREAD_COUNT];
 
 		// Initialize our random bits and ints
@@ -159,6 +163,40 @@ class Pool {
 						nodes[i][j] = new Node();
 					ints[i][j] = rand()%INT_MAX;
 				}
+
+				//Transaction Description creation
+				for(int j=0; j < TRANSACTION_COUNT/THREAD_COUNT; j++){
+
+				
+					transactions[i][j] = new Desc();
+					transactions[i][j]->size = OPERATIONS_PER_TRANSACTION;
+					transactions[i][j]->status = Active;
+					
+					
+					for(int k=0; k < OPERATIONS_PER_TRANSACTION; k++){
+						
+						int randomNumber = rand() % 15;
+						int newRandom = rand() % 100;
+
+						if(randomNumber < 15){
+							transactions[i][j]->ops[k].type = Insert;
+							transactions[i][j]->ops[k].key = newRandom;
+							transactionNodes[i][j][k] = new Node(newRandom);
+						}else if (randomNumber < 20){	
+								transactions[i][j]->ops[k].type = Delete;
+			
+
+								transactions[i][j]->ops[k].key = 1;
+						}else{
+							
+								transactions[i][j]->ops[k].type = Find;
+		
+
+								transactions[i][j]->ops[k].key = 2;
+						}
+						
+					}
+				} 
 			}
 		}
 };
@@ -174,23 +212,79 @@ class List {
 			head = new Node(INT_MIN, new Node(INT_MAX)); // Create our head and tail, which cannot be destroyed
 		}
 
-		Node* findNode(int key, Desc* desc, int opid, int threadNum)
-		{
-			Window *window = Window::find(head, key, threadNum);
-			return window->curr;
-		}
-
-		bool insertNode(int key, Desc* desc, int opid, int threadNum, int operationNum)
+		bool findNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
 		{
 			NodeInfo* info = new NodeInfo;
-			//info->desc = 
+			info->desc = desc;
+			info->opid = opid;
+			Status ret;
+			while(true){
+				Window *window = Window::find(head, key, threadNum);
+				Node* curr = window->pred; //do_locatePred(key);
+				if(isNodePresent(curr, key))
+					ret = updateInfo(curr, info, true, threadNum, transactionNum);
+				else
+					ret = fail;
+				if(ret == success) return true;
+				if(ret == fail) return false;
+			}
 
-			return do_insert(key, threadNum, operationNum);
+
+
+			//Window *window = Window::find(head, key, threadNum);
+			//return window->curr;
 		}
 
-		bool deleteNode(int key, Desc* desc, int opid, int threadnum)
+		bool insertNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
 		{
-			do_delete(key, threadnum);
+			
+			NodeInfo* info = new NodeInfo;
+			info->desc = desc;
+			info->opid = opid;
+			Status ret;
+			while(true){
+				Window *window = Window::find(head, key, threadNum);
+				Node* curr = window->pred;
+				if(isNodePresent(curr, key))
+					ret = updateInfo(curr, info, false, threadNum, transactionNum);
+				else{
+					bool insRet = do_insert(key, threadNum, transactionNum, opid);
+					if(insRet)
+						ret = success;
+					else
+						ret = fail;
+				}
+				if(ret == success) return true;
+				if(ret == fail) return false;
+			}
+
+			//return do_insert(key, threadNum, transactionNum, opid);
+		}
+
+		bool deleteNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
+		{
+			NodeInfo* info = new NodeInfo;
+			info->desc = desc;
+			info->opid = opid;
+			Status ret;
+			while(true){
+				Window *window = Window::find(head, key, threadNum);
+				Node* curr = window->pred;
+				if (isNodePresent(curr, key))
+					ret = updateInfo(curr, info, true, threadNum, transactionNum);
+				else
+					ret = fail;
+				if (ret == success){
+					//del = curr;
+					return true;
+				}
+				if(ret == fail){
+					//del == NULL;
+					return false;
+				}
+			}
+
+			//do_delete(key, threadnum);
 		}
 
 		bool isNodePresent(Node* n, int key) {
@@ -213,14 +307,14 @@ class List {
 			}
 		}
 
-		Status updateInfo(Node* n, NodeInfo* info, bool wantKey, int threadnum, int operationNum) {
+		Status updateInfo(Node* n, NodeInfo* info, bool wantKey, int threadnum, int transactionNum) {
 			NodeInfo* oldinfo = n->info.load();
 			if(isMarked(oldinfo)) {
 				do_delete(n->key, threadnum); // TODO: Find a way to call the normal delete here
 				return retry;
 			}
 			if(oldinfo->desc != info->desc) {
-				executeOps(oldinfo->desc, oldinfo->opid + 1, threadnum, operationNum);
+				executeOps(oldinfo->desc, oldinfo->opid + 1, threadnum, transactionNum);
 			} else if(oldinfo->opid >= info->opid) {
 				return success;
 			}
@@ -238,48 +332,58 @@ class List {
 			}
 		}
 
-		bool executeTransaction(Desc* desc){
-			ExecuteOps(desc, 0, 0, 0);
-			return (desc.status == Comitted);
+		bool executeTransaction(Desc* desc, int threadnum, int transactionNum){
+			helpstack.init();
+			executeOps(desc, 0, threadnum, transactionNum);
+			return (desc->status == Comitted);
 		}
 
-		void executeOps(Desc* desc, int opid, int threadnum, int operationNum){
-			 bool ret = true;
-			 helpstack.init();
+		void executeOps(Desc* desc, int opid, int threadnum, int transactionNum){
 
+			 bool ret = true;
 			 if(helpstack.contains(desc)){
 			 	//compare and swap
+			 	return;
 			 }
 
-			 helpstack.push(desc);
-
+			 //helpstack.push(desc);
+			 
 			 while((desc->status == Active) && ret && (opid < desc->size)){
 
-			 	Operation& op = desc->ops[opid];
+			 	
 
+			 	Operation& op = desc->ops[opid];
+			
 			 	switch (op.type){
 			 		case Insert:
-			 			ret = insertNode(op.key, desc, opid, threadnum, operationNum);
+			 			ret = insertNode(op.key, desc, opid, threadnum, transactionNum);
 			 			break;
 			 		case Delete:
-			 			ret = deleteNode(op.key, desc, opid, threadnum);
+			 			ret = deleteNode(op.key, desc, opid, threadnum, transactionNum);
 			 			break;
 			 		case Find:
-			 			ret = findNode(op.key, desc, opid, threadnum);
+			 			ret = findNode(op.key, desc, opid, threadnum, transactionNum);
 			 			break;
 
 			 	};
-
+			 	
 			 	opid++;
-
 			 }
 
-			 helpstack.pop();
+			 //helpstack.pop();
+
+			 //if(ret){
+			 	//if (compare and swap Committed)
+			 		//markDelete();
+			//}
+			 //else
+			 	//compare and swap Aborted
+
 		}
 
 
 
-		bool do_insert(int num, int threadNum, int operationNum) {
+		bool do_insert(int num, int threadNum, int transactionNum, int opid) {
             int key = num;
 
             while(true) {
@@ -289,7 +393,7 @@ class List {
                 if(curr->key == key) {
                     return false;
                 } else {
-                    Node *node = getNode(threadNum, operationNum, num, curr);
+                    Node *node = getNode2(threadNum, transactionNum, opid, num, curr);
                     uintptr_t old = MarkableReference(curr, false);
                     uintptr_t altered = MarkableReference(node, false);
                     if(pred->next.compare_exchange_strong(old, altered))
@@ -322,7 +426,7 @@ class List {
             }
 		}
 
-		bool do_locatePred(int num) {
+		Node* do_locatePred(int num) {
             int key = num;
             bool marked = false;
             Node *curr = head;
@@ -332,20 +436,31 @@ class List {
                 Node *succ = get(curr->next.load(), &marked);
             }
 
-            return (curr->key == key && !marked);
+            if (curr->key == key && !marked)
+            	return curr;
 		}
 };
 
 List list; // Create our list
 Pool pool; // Create our pool
 
+/*
 static Node* getNode(int threadNum, int operationNum, int num, Node *succ) {
 	Node *node = pool.nodes[threadNum][operationNum];
 	node->item = num;
 	node->key = num;
 	node->next.store(MarkableReference(succ));
 	return node;
+}*/
+
+static Node* getNode2(int threadNum, int transactionNum, int opid, int num, Node *succ) {
+	Node *node = pool.transactionNodes[threadNum][transactionNum][opid];
+	node->item = num;
+	node->key = num;
+	node->next.store(MarkableReference(succ));
+	return node;
 }
+
 static Window* getWindow(Node *myPred, Node *myCurr, int threadNum) {
 	Window *window = pool.windows[threadNum];
 	window->pred = myPred;
@@ -355,6 +470,13 @@ static Window* getWindow(Node *myPred, Node *myCurr, int threadNum) {
 
 void runThread(int threadNum) {
 
+
+	for(int i = 0; i < TRANSACTION_COUNT/THREAD_COUNT; i++){
+		list.executeTransaction(pool.transactions[threadNum][i], threadNum, i);
+	}
+
+
+	/*
 	for(int i=0; i<NUM_OPERATIONS/THREAD_COUNT; i++) {
 		switch(pool.bits[threadNum][i]) {
 			case 0:
@@ -383,6 +505,7 @@ void runThread(int threadNum) {
 				break;
 		}
 	}
+	*/
 }
 
 

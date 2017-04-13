@@ -8,6 +8,8 @@
 #include <set>
 using namespace std;
 
+const int OPERATIONS_PER_TRANSACTION = 100;
+
 enum Status { // Statuses a function can be in
 	success,
 	fail,
@@ -34,7 +36,7 @@ struct Operation {
 struct Desc { // Descriptor
 	int size;
 	TxStatus status;
-	Operation ops[];
+	Operation ops[OPERATIONS_PER_TRANSACTION];
 };
 
 struct NodeInfo { // Node Information
@@ -75,15 +77,3 @@ struct HelpStack
 	}
 };
 
-/*Placeholders for "do_" functions
-void do_locatePred(Node*& pred, Node*& curr, uint32_t key){
-	return;
-}
-
-bool do_insert(uint32_t key, Desc* desc, uint8_t opid, Node*& inserted, Node*& pred){
-	return true;
-}
-
-void do_delete(uint32_t key, Desc* desc, uint8_t opid, Node*& deleted, Node*& pred){
-	return;
-}*/
