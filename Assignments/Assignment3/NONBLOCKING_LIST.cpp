@@ -11,7 +11,7 @@ using namespace std;
 // Following three are adjustable to run the program
 // with different sets of functionality
 const int THREAD_COUNT = 2;
-const int NUM_TRANSACTIONS = 20000;
+const int NUM_TRANSACTIONS = 80000;
 const bool DEBUG = false;
 
 class MarkableReference;
@@ -143,9 +143,9 @@ class Pool {
 				windows[i] = new Window(); // Each thread gets a Window object
 				for(int j=0; j<NUM_TRANSACTIONS/THREAD_COUNT; j++) {
 					descriptors[i][j] = new Desc;
-					descriptors[i][j]->size = rand() % 10; // Transactions will not be more than 10 operations in our tests
+					descriptors[i][j]->size = 1 + rand() % 100; // Transactions will not be more than 10 operations in our tests
 					descriptors[i][j]->ops = new Operation[descriptors[i][j]->size];
-					descriptors[i][j]->status = Active;
+					descriptors[i][j]->status.store(Active);
 					for(int k=0; k<descriptors[i][j]->size; k++) {
 						// The following commented lines will enable probability functionalities
 						// for operations to be performed 
@@ -261,14 +261,14 @@ class List {
 
 		bool isKeyPresent(NodeInfo* info, Desc* desc) {
 		OpType op = info->desc->ops[info->opid].type;
-		TxStatus status = info->desc->status;
+		TxStatus status = info->desc->status.load();
 		switch(status) {
 			case Active:
 				if(info->desc==desc)
 					return op == Find || op == Insert;
 				else
 					return op == Find || op == Delete;
-			case Comitted:
+			case Committed:
 				return op == Find || op == Insert;
 			case Aborted:
 				return op == Find || op == Delete;
@@ -290,7 +290,7 @@ class List {
 			if((!hasKey && wantKey) || (hasKey && !wantKey)) {
 				return fail;
 			}
-			if(info->desc->status != Active) {
+			if(info->desc->status.load() != Active) {
 				return fail;
 			}
 			if(n->info.compare_exchange_strong(oldinfo, info)) {
@@ -303,20 +303,22 @@ class List {
 		bool executeTransaction(Desc* desc, int threadnum, int transactionNum){
 			helpstack.init();
 			executeOps(desc, 0, threadnum, transactionNum);
-			return (desc->status == Comitted);
+			return (desc->status.load() == Committed);
 		}
 
 		void executeOps(Desc* desc, int opid, int threadnum, int transactionNum){
 
 			 bool ret = true;
 			 if(helpstack.contains(desc)){
-			 	//compare and swap
+				TxStatus expected = Active;
+				TxStatus changed = Aborted;
+			 	desc->status.compare_exchange_strong(expected, changed);
 			 	return;
 			 }
 
 			 //helpstack.push(desc);
 			 
-			 while((desc->status == Active) && ret && (opid < desc->size)){
+			 while((desc->status.load() == Active) && ret && (opid < desc->size)){
 
 			 	
 
@@ -332,21 +334,24 @@ class List {
 			 		case Find:
 			 			ret = findNode(op.key, desc, opid, threadnum, transactionNum);
 			 			break;
-
-			 	};
+				};
 			 	
 			 	opid++;
 			 }
 
 			 //helpstack.pop();
 
-			 //if(ret){
-			 	//if (compare and swap Committed)
-			 		//markDelete();
-			//}
-			 //else
-			 	//compare and swap Aborted
-
+			 if(ret){
+				TxStatus expected = Active;
+				TxStatus changed = Committed;
+			 	if (desc->status.compare_exchange_strong(expected, changed)) {
+					//markDelete();
+				 }
+			} else {
+			 	TxStatus expected = Active;
+				TxStatus changed = Aborted;
+			 	desc->status.compare_exchange_strong(expected, changed);
+			}
 		}
 
 
@@ -398,14 +403,17 @@ class List {
             int key = num;
             bool marked = false;
             Node *curr = head;
+			Node *succ = getReference(head->next.load());
 
             while(curr->key < key) {
                 curr = getReference(curr->next.load());
-                Node *succ = get(curr->next.load(), &marked);
+                succ = get(curr->next.load(), &marked);
             }
 
             if (curr->key == key && !marked)
             	return curr;
+
+			return succ;
 		}
 };
 
@@ -441,6 +449,7 @@ void runThread(int threadNum) {
 
 	for(int i = 0; i < NUM_TRANSACTIONS/THREAD_COUNT; i++){
 		list.executeTransaction(pool.descriptors[threadNum][i], threadNum, i);
+		if(DEBUG) cout << pool.descriptors[threadNum][i]->status.load();
 	}
 
 

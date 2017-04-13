@@ -16,7 +16,7 @@ enum Status { // Statuses a function can be in
 
 enum TxStatus { // Transaction Status
 	Active,
-	Comitted,
+	Committed,
 	Aborted
 };
 
@@ -36,7 +36,7 @@ struct Desc { // Descriptor
 		return sizeof(int) + sizeof(TxStatus) + sizeof(Operation) * size;
 	}
 	int size;
-	TxStatus status;
+	atomic<TxStatus> status;
 	Operation* ops; // This array will be dynamically allocated when a transaction is made
 };
 
