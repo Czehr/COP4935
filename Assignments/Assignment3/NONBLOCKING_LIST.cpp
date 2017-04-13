@@ -135,6 +135,7 @@ class Pool {
 		Desc *descriptors[THREAD_COUNT][NUM_TRANSACTIONS/THREAD_COUNT];
 		Node *nodes[THREAD_COUNT][NUM_TRANSACTIONS/THREAD_COUNT][10];
 		Window *windows[THREAD_COUNT];
+		HelpStack helpstack[THREAD_COUNT];
 
 		// Initialize our random bits and ints
 		Pool() {
@@ -169,11 +170,11 @@ class Pool {
 		}
 };
 
+Pool pool; // Create our pool
+
 class List {
 	private:
 		Node *head;
-		HelpStack helpstack;
-
 
 	public:
 		List() {
@@ -252,7 +253,7 @@ class List {
 				}
 			}
 
-			//do_delete(key, threadnum);
+			//do_delete(key, threadNum);
 		}
 
 		bool isNodePresent(Node* n, int key) {
@@ -275,14 +276,14 @@ class List {
 			}
 		}
 
-		Status updateInfo(Node* n, NodeInfo* info, bool wantKey, int threadnum, int transactionNum) {
+		Status updateInfo(Node* n, NodeInfo* info, bool wantKey, int threadNum, int transactionNum) {
 			NodeInfo* oldinfo = n->info.load();
 			if(isMarked(oldinfo)) {
-				do_delete(n->key, threadnum); // TODO: Find a way to call the normal delete here
+				do_delete(n->key, threadNum); // TODO: Find a way to call the normal delete here
 				return retry;
 			}
 			if(oldinfo->desc != info->desc) {
-				executeOps(oldinfo->desc, oldinfo->opid + 1, threadnum, transactionNum);
+				executeOps(oldinfo->desc, oldinfo->opid + 1, threadNum, transactionNum);
 			} else if(oldinfo->opid >= info->opid) {
 				return success;
 			}
@@ -300,23 +301,23 @@ class List {
 			}
 		}
 
-		bool executeTransaction(Desc* desc, int threadnum, int transactionNum){
-			helpstack.init();
-			executeOps(desc, 0, threadnum, transactionNum);
+		bool executeTransaction(Desc* desc, int threadNum, int transactionNum){
+			pool.helpstack[threadNum].init();
+			executeOps(desc, 0, threadNum, transactionNum);
 			return (desc->status.load() == Committed);
 		}
 
-		void executeOps(Desc* desc, int opid, int threadnum, int transactionNum){
+		void executeOps(Desc* desc, int opid, int threadNum, int transactionNum){
 
 			 bool ret = true;
-			 if(helpstack.contains(desc)){
+			 if(pool.helpstack[threadNum].contains(desc)){
 				TxStatus expected = Active;
 				TxStatus changed = Aborted;
 			 	desc->status.compare_exchange_strong(expected, changed);
 			 	return;
 			 }
 
-			 //helpstack.push(desc);
+			 pool.helpstack[threadNum].push(desc);
 			 
 			 while((desc->status.load() == Active) && ret && (opid < desc->size)){
 
@@ -326,20 +327,20 @@ class List {
 			
 			 	switch (op.type){
 			 		case Insert:
-			 			ret = insertNode(op.key, desc, opid, threadnum, transactionNum);
+			 			ret = insertNode(op.key, desc, opid, threadNum, transactionNum);
 			 			break;
 			 		case Delete:
-			 			ret = deleteNode(op.key, desc, opid, threadnum, transactionNum);
+			 			ret = deleteNode(op.key, desc, opid, threadNum, transactionNum);
 			 			break;
 			 		case Find:
-			 			ret = findNode(op.key, desc, opid, threadnum, transactionNum);
+			 			ret = findNode(op.key, desc, opid, threadNum, transactionNum);
 			 			break;
 				};
 			 	
 			 	opid++;
 			 }
 
-			 //helpstack.pop();
+			 pool.helpstack[threadNum].pop();
 
 			 if(ret){
 				TxStatus expected = Active;
@@ -418,7 +419,6 @@ class List {
 };
 
 List list; // Create our list
-Pool pool; // Create our pool
 
 /*
 static Node* getNode(int threadNum, int operationNum, int num, Node *succ) {
