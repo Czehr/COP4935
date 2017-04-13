@@ -11,8 +11,7 @@ using namespace std;
 // Following three are adjustable to run the program
 // with different sets of functionality
 const int THREAD_COUNT = 2;
-const int TRANSACTION_COUNT = 50000;
-const int NUM_OPERATIONS = 20000;
+const int NUM_TRANSACTIONS = 20000;
 const bool DEBUG = false;
 
 class MarkableReference;
@@ -132,71 +131,40 @@ class Window {
 
 class Pool {
 	public:
-		unsigned char bits[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
-		int ints[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
-		Node *nodes[THREAD_COUNT][NUM_OPERATIONS/THREAD_COUNT];
-		Node *transactionNodes[THREAD_COUNT][TRANSACTION_COUNT][OPERATIONS_PER_TRANSACTION];
-		Desc *transactions[THREAD_COUNT][TRANSACTION_COUNT/THREAD_COUNT];
+		unsigned char bits[THREAD_COUNT][NUM_TRANSACTIONS/THREAD_COUNT];
+		Desc *descriptors[THREAD_COUNT][NUM_TRANSACTIONS/THREAD_COUNT];
+		Node *nodes[THREAD_COUNT][NUM_TRANSACTIONS/THREAD_COUNT][10];
 		Window *windows[THREAD_COUNT];
 
 		// Initialize our random bits and ints
 		Pool() {
 			srand(time(NULL));
 			for(int i=0; i<THREAD_COUNT; i++) {
-				windows[i] = new Window();
-				for(int j=0; j<NUM_OPERATIONS/THREAD_COUNT; j++) {
+				windows[i] = new Window(); // Each thread gets a Window object
+				for(int j=0; j<NUM_TRANSACTIONS/THREAD_COUNT; j++) {
+					descriptors[i][j] = new Desc;
+					descriptors[i][j]->size = rand() % 10; // Transactions will not be more than 10 operations in our tests
+					descriptors[i][j]->ops = new Operation[descriptors[i][j]->size];
+					descriptors[i][j]->status = Active;
+					for(int k=0; k<descriptors[i][j]->size; k++) {
+						// The following commented lines will enable probability functionalities
+						// for operations to be performed 
+						int x = rand() % 100;
+						OpType random;
 
-					// The following commented lines will enable probability functionalities
-					// for operations to be performed 
-					 int x = rand() % 100;
-					 int random;
-
-					 if (x < 15)            // 15% insert
-					 	random = 0;
-					 else if (x < 20)       // 5% 	delete
-					 	random = 1;
-					 else                   //	80% find
-					 	random = 2;
-
-					bits[i][j] = (unsigned char)random;// 0=insert,1=delete,2=find
-					if(bits[i][j] == 0)
-						nodes[i][j] = new Node();
-					ints[i][j] = rand()%INT_MAX;
-				}
-
-				//Transaction Description creation
-				for(int j=0; j < TRANSACTION_COUNT/THREAD_COUNT; j++){
-
-				
-					transactions[i][j] = new Desc();
-					transactions[i][j]->size = OPERATIONS_PER_TRANSACTION;
-					transactions[i][j]->status = Active;
-					
-					
-					for(int k=0; k < OPERATIONS_PER_TRANSACTION; k++){
-						
-						int randomNumber = rand() % 15;
-						int newRandom = rand() % 100;
-
-						if(randomNumber < 15){
-							transactions[i][j]->ops[k].type = Insert;
-							transactions[i][j]->ops[k].key = newRandom;
-							transactionNodes[i][j][k] = new Node(newRandom);
-						}else if (randomNumber < 20){	
-								transactions[i][j]->ops[k].type = Delete;
-			
-
-								transactions[i][j]->ops[k].key = 1;
-						}else{
-							
-								transactions[i][j]->ops[k].type = Find;
-		
-
-								transactions[i][j]->ops[k].key = 2;
+						if (x < 15) {          // 15% insert
+							random = Insert;
+							nodes[i][j][k] = new Node();
+						} else if (x < 20) {   // 5% 	delete
+							random = Delete;
+						} else {               // 80% find
+							random = Find;
 						}
 						
+						descriptors[i][j]->ops[k].key = rand()%INT_MAX;
+						descriptors[i][j]->ops[k].type = random;
 					}
-				} 
+				}
 			}
 		}
 };
@@ -454,7 +422,7 @@ static Node* getNode(int threadNum, int operationNum, int num, Node *succ) {
 }*/
 
 static Node* getNode2(int threadNum, int transactionNum, int opid, int num, Node *succ) {
-	Node *node = pool.transactionNodes[threadNum][transactionNum][opid];
+	Node *node = pool.nodes[threadNum][transactionNum][opid];
 	node->item = num;
 	node->key = num;
 	node->next.store(MarkableReference(succ));
@@ -471,13 +439,13 @@ static Window* getWindow(Node *myPred, Node *myCurr, int threadNum) {
 void runThread(int threadNum) {
 
 
-	for(int i = 0; i < TRANSACTION_COUNT/THREAD_COUNT; i++){
-		list.executeTransaction(pool.transactions[threadNum][i], threadNum, i);
+	for(int i = 0; i < NUM_TRANSACTIONS/THREAD_COUNT; i++){
+		list.executeTransaction(pool.descriptors[threadNum][i], threadNum, i);
 	}
 
 
 	/*
-	for(int i=0; i<NUM_OPERATIONS/THREAD_COUNT; i++) {
+	for(int i=0; i<NUM_TRANSACTIONS/THREAD_COUNT; i++) {
 		switch(pool.bits[threadNum][i]) {
 			case 0:
 				if(list.insertNode(pool.ints[threadNum][i], threadNum, i)) {

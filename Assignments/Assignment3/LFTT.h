@@ -8,8 +8,6 @@
 #include <set>
 using namespace std;
 
-const int OPERATIONS_PER_TRANSACTION = 100;
-
 enum Status { // Statuses a function can be in
 	success,
 	fail,
@@ -34,9 +32,12 @@ struct Operation {
 };
 
 struct Desc { // Descriptor
+	static size_t sizeOf(uint8_t size) {
+		return sizeof(int) + sizeof(TxStatus) + sizeof(Operation) * size;
+	}
 	int size;
 	TxStatus status;
-	Operation ops[OPERATIONS_PER_TRANSACTION];
+	Operation* ops; // This array will be dynamically allocated when a transaction is made
 };
 
 struct NodeInfo { // Node Information
