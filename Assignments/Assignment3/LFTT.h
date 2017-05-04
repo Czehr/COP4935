@@ -1,3 +1,9 @@
+/***
+This header file contains the core enums and structs used by the LFTT algorithm.
+Currently, we plan to use this file, unaltered, in the transformation of other 
+data structures.
+***/
+
 #include <iostream>
 #include <thread>
 #include <atomic>
