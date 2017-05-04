@@ -10,18 +10,16 @@ using namespace std;
 
 // Following three are adjustable to run the program
 // with different sets of functionality
-const int THREAD_COUNT = 32;
-const int KEY_RANGE = 10000;
-const int NUM_TRANSACTIONS = 320000;
+const int THREAD_COUNT = 4;
 const int TRANSACTION_SIZE = 1;
-const int PERCENT_INSERT = 33;
-const int PERCENT_DELETE = 33;
+const int PERCENT_INSERT = 15;
+const int PERCENT_DELETE = 5;
 // Because of the way our random function works, PERCENT_FIND does nothing. 
 // Set it by leaving a percentage left over from insert and delete. 
 const int PERCENT_FIND = 33;
+const int KEY_RANGE = 10000;
+const int NUM_TRANSACTIONS = 320000;
 const bool DEBUG = false;
-
-atomic<int> comitted = ATOMIC_VAR_INIT(0);
 
 class MarkableReference;
 class Node;
@@ -145,6 +143,7 @@ class Pool {
 		Node *nodes[THREAD_COUNT+1][NUM_TRANSACTIONS/THREAD_COUNT][TRANSACTION_SIZE];
 		Window *windows[THREAD_COUNT+1];
 		HelpStack helpstack[THREAD_COUNT+1];
+		int counter[THREAD_COUNT] = {};
 
 		// Initialize our random bits and ints
 		Pool() {			
@@ -479,7 +478,7 @@ void runThread(int threadNum) {
 	for(int i = 0; i < NUM_TRANSACTIONS/THREAD_COUNT; i++){
 		list.executeTransaction(pool.descriptors[threadNum][i], threadNum, i);
 		if(pool.descriptors[threadNum][i]->status.load() == Committed) {
-			comitted.fetch_add(1); // Increment our successful commits by 1
+			pool.counter[threadNum] += 1;
 		}
 		if(DEBUG) cout << pool.descriptors[threadNum][i]->status.load();
 	}
@@ -529,12 +528,17 @@ int main(int argc, char *argv[]) {
 	for(long i=0; i<THREAD_COUNT; i++) { // Start our threads
 		threads[i] = thread(runThread, i);
 	}
+	int comitted = 0;
 	for(int i=0; i<THREAD_COUNT; i++) { // Wait for all threads to complete
 		threads[i].join();
 	}
 	auto total = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - start); // Get total execution time
+	for(int i=0; i<THREAD_COUNT; i++) {
+		comitted += pool.counter[i]; // Tally all comitted operations
+	}
+	cout << "Ran with " << THREAD_COUNT << " threads and " << TRANSACTION_SIZE << " operations per transaction" << endl;
 	cout << "Total runtime is " << total.count() << " milliseconds" << endl;
-	cout << comitted.load() << " out of " << NUM_TRANSACTIONS <<" successful commits" << endl;
+	cout << comitted << " out of " << NUM_TRANSACTIONS <<" successful commits" << endl;
 	
 	return 0;
 }
