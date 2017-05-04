@@ -7,8 +7,7 @@ To run the program:
 ./LFTT.out
 
 
-The number of threads and number of operations can be manipulated through the source code, as they have been implemented using global constants.
-Also, the probability calculations have been commented out to be easily to implement if needed.
+The number of threads, number of operations, operation distributions, transaction sizes, etc. can be manipulated through the source code, as they have been implemented using global constants.
 
 
 
