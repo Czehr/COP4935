@@ -12,8 +12,8 @@ using namespace std;
 // with different sets of functionality
 const int THREAD_COUNT = 4;
 const int TRANSACTION_SIZE = 1;
-const int PERCENT_INSERT = 15;
-const int PERCENT_DELETE = 5;
+const int PERCENT_INSERT = 33;
+const int PERCENT_DELETE = 33;
 // Because of the way our random function works, PERCENT_FIND does nothing. 
 // Set it by leaving a percentage left over from insert and delete. 
 const int PERCENT_FIND = 33;
@@ -524,20 +524,25 @@ int main(int argc, char *argv[]) {
 	}
 	
 	thread threads[THREAD_COUNT]; // Create our threads
+	
 	auto start = chrono::system_clock::now(); // Get the time
 	for(long i=0; i<THREAD_COUNT; i++) { // Start our threads
 		threads[i] = thread(runThread, i);
 	}
-	int comitted = 0;
 	for(int i=0; i<THREAD_COUNT; i++) { // Wait for all threads to complete
 		threads[i].join();
 	}
 	auto total = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - start); // Get total execution time
+	
+	int comitted = 0;
 	for(int i=0; i<THREAD_COUNT; i++) {
 		comitted += pool.counter[i]; // Tally all comitted operations
 	}
+	
+	double throughput = comitted/(total.count()*1000);
+	
 	cout << "Ran with " << THREAD_COUNT << " threads and " << TRANSACTION_SIZE << " operations per transaction" << endl;
-	cout << "Total runtime is " << total.count() << " milliseconds" << endl;
+	cout << total.count() << " milliseconds" << endl;
 	cout << comitted << " out of " << NUM_TRANSACTIONS <<" successful commits" << endl;
 	
 	return 0;
