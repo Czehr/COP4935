@@ -1,6 +1,7 @@
+#pragma once
 /***
 This header file contains the core enums and structs used by the LFTT algorithm.
-Currently, we plan to use this file, unaltered, in the transformation of other 
+Currently, we plan to use this file, unaltered, in the transformation of other
 data structures.
 ***/
 
@@ -52,8 +53,8 @@ struct NodeInfo { // Node Information
 };
 
 /*struct Node {
-	NodeInfo* info;
-	int key;
+NodeInfo* info;
+int key;
 };*/
 
 struct HelpStack
@@ -61,23 +62,23 @@ struct HelpStack
 	int index;
 	Desc* descriptors[256];
 
-	void init(){
+	void init() {
 		index = 0;
 	}
 
-	void push(Desc* desc){
+	void push(Desc* desc) {
 		assert(index < 255);
 		descriptors[index++] = desc;
 	}
 
-	void pop(){
+	void pop() {
 		assert(index > 0);
 		index--;
 	}
 
-	bool contains(Desc* desc){
-		for(int i = 0; i < index; i++){
-			if(descriptors[i] == desc)
+	bool contains(Desc* desc) {
+		for (int i = 0; i < index; i++) {
+			if (descriptors[i] == desc)
 				return true;
 		}
 		return false;
