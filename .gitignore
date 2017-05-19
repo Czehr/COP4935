@@ -1,1 +1,4 @@
 *.out
+Assignments/Assignment3/.vs/
+*.exe
+*.obj
