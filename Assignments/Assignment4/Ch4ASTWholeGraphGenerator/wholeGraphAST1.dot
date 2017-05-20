@@ -1,0 +1,5 @@
+digraph "GwholeGraphAST1.dot" {
+"0x7f3b98346010"[label="SgProject" shape=ellipse,regular=0,URL="\N",tooltip="more info at\N",sides=4,peripheries=1,color="Blue",fillcolor=yellow,fontname="7x13bold",fontcolor=black,style=filled];
+"0x7f3b98346010" -> "0x7f3b98346010__parent__null"[label="parent" dir=none ];
+"0x7f3b98346010__parent__null"[label="" shape=diamond ];
+}
