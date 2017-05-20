@@ -1,0 +1,2 @@
+IR: Intermediate Representation
+Circles represent IR nodes, with edge numbers of the treaversal on top and the number of child nodes appearing below
