@@ -24,12 +24,10 @@ const bool DEBUG = false;
 class MarkableReference;
 class Node;
 class Pool;
-class Window;
 class List;
 
 static Node* getNode(int, int, int, Node*);
 static Node* getNode2(int, int, int, int, Node*);
-static Window* getWindow(Node*, Node*, int);
 
 // MarkableReference functions
 static const uintptr_t mask = 1; // This mask is used to properly store our mark
@@ -93,23 +91,9 @@ public:
 	}
 };
 
-class Window {
-public:
-	Node *pred, *curr;
-
-	Window() {
-		pred = NULL;
-		curr = NULL;
-	}
-
-	Window(Node *myPred, Node *myCurr) {
-		pred = myPred;
-		curr = myCurr;
-	}
-
-	static Window *find(Node *head, int key, int threadNum) {
-		Node *pred, *curr, *succ;
-		bool marked = false;
+static void find(Node *head, int key, Node *&pred, Node *&curr) {
+	Node *succ;
+	bool marked = false;
 
 	retry: while (true) {
 		pred = head;
@@ -127,21 +111,20 @@ public:
 				succ = get(curr->next.load(), &marked);
 			}
 
-			if (curr->key >= key)
-				return getWindow(pred, curr, threadNum);
+			if (curr->key >= key) {
+				return;
+			}
 			pred = curr;
 			curr = succ;
 		}
 	}
-	}
-};
+}
 
 class Pool {
 public:
 	unsigned char bits[THREAD_COUNT + 1][NUM_TRANSACTIONS / THREAD_COUNT];
 	Desc *descriptors[THREAD_COUNT + 1][NUM_TRANSACTIONS / THREAD_COUNT];
 	Node *nodes[THREAD_COUNT + 1][NUM_TRANSACTIONS / THREAD_COUNT][TRANSACTION_SIZE];
-	Window *windows[THREAD_COUNT + 1];
 	HelpStack helpstack[THREAD_COUNT + 1];
 	int counter[THREAD_COUNT] = {};
 
@@ -149,7 +132,6 @@ public:
 	Pool() {
 		srand(time(NULL));
 		for (int i = 0; i < THREAD_COUNT; i++) {
-			windows[i] = new Window(); // Each thread gets a Window object
 			for (int j = 0; j < NUM_TRANSACTIONS / THREAD_COUNT; j++) {
 				descriptors[i][j] = new Desc;
 				descriptors[i][j]->size = TRANSACTION_SIZE;
@@ -184,7 +166,6 @@ public:
 			cout << "Not enough space in pool." << endl;
 			exit(EXIT_FAILURE);
 		}
-		windows[THREAD_COUNT] = new Window();
 		for (int j = 0; j < KEY_RANGE; j++) {
 			int i = THREAD_COUNT;
 			descriptors[i][j] = new Desc;
@@ -218,8 +199,8 @@ public:
 		info->opid = opid;
 		Status ret;
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node* curr = window->pred; //do_locatePred(key);
+			Node *pred, *curr;
+			find(head, key, pred, curr);
 			if (isNodePresent(curr, key))
 				ret = updateInfo(curr, info, true, threadNum, transactionNum);
 			else
@@ -227,11 +208,6 @@ public:
 			if (ret == success) return true;
 			if (ret == fail) return false;
 		}
-
-
-
-		//Window *window = Window::find(head, key, threadNum);
-		//return window->curr;
 	}
 
 	bool insertNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
@@ -242,8 +218,8 @@ public:
 		info->opid = opid;
 		Status ret;
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node* curr = window->pred;
+			Node *pred, *curr;
+			find(head, key, pred, curr);
 			if (isNodePresent(curr, key))
 				ret = updateInfo(curr, info, false, threadNum, transactionNum);
 			else {
@@ -267,8 +243,8 @@ public:
 		info->opid = opid;
 		Status ret;
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node* curr = window->pred;
+			Node *pred, *curr;
+			find(head, key, pred, curr);
 			if (isNodePresent(curr, key))
 				ret = updateInfo(curr, info, true, threadNum, transactionNum);
 			else
@@ -394,8 +370,9 @@ public:
 		int key = num;
 
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node *pred = window->pred, *curr = window->curr;
+			Node *pred;
+			Node *curr;
+			find(head, key, pred, curr);
 
 			if (curr->key == key) {
 				return false;
@@ -414,8 +391,8 @@ public:
 		int key = num;
 
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node *pred = window->pred, *curr = window->curr;
+			Node *pred, *curr;
+			find(head, key, pred, curr);
 
 			if (curr->key != key) {
 				return false;
@@ -470,13 +447,6 @@ static Node* getNode2(int threadNum, int transactionNum, int opid, int num, Node
 	node->key = num;
 	node->next.store(MarkableReference(succ));
 	return node;
-}
-
-static Window* getWindow(Node *myPred, Node *myCurr, int threadNum) {
-	Window *window = pool.windows[threadNum];
-	window->pred = myPred;
-	window->curr = myCurr;
-	return window;
 }
 
 void runThread(int threadNum) {
