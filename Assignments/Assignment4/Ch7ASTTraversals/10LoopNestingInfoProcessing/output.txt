@@ -1,0 +1,13 @@
+In convert_type(): case tk_vector: still not correctly implemented! 
+
+Output:
+Nesting level:5, nesting depth:1
+Nesting level:4, nesting depth:2
+Nesting level:3, nesting depth:3
+Nesting level:2, nesting depth:4
+Nesting level:1, nesting depth:5
+Nesting level:2, nesting depth:1
+Nesting level:1, nesting depth:2
+Nesting level:1, nesting depth:1
+Max loop nesting level: 5
+

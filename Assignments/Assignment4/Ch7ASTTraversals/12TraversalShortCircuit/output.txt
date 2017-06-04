@@ -1,0 +1,10 @@
+In convert_type(): case tk_vector: still not correctly implemented! 
+Visiting SgVarRef '__go__'
+Visiting SgVarRef '__stop__'
+*** Reference to a symbol '__stop__' found. ***
+	0x7fdba2ee3078:SgVarRefExp
+	At /home/demo/COP4934/Assignments/Assignment4/Ch7ASTTraversals/12TraversalShortCircuit/inputCode_traversalShortCircuit.C:17
+Visiting SgVarRef '__go__'
+*** Reference to a symbol '__go__' found. ***
+	0x7fdba2ee3010:SgVarRefExp
+	At /home/demo/COP4934/Assignments/Assignment4/Ch7ASTTraversals/12TraversalShortCircuit/inputCode_traversalShortCircuit.C:16

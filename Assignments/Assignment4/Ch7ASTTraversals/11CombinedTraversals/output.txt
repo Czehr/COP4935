@@ -1,0 +1,52 @@
+In convert_type(): case tk_vector: still not correctly implemented! 
+sequential execution of traversals
+Found for loop
+Found for loop
+for loop total: 2
+Found int constant
+Found int constant
+Found int constant
+Found int constant
+Found int constant
+Found int constant
+Found int constant
+Found int constant
+Found int constant
+Found int constant
+int constant total: 10
+Found variable declaration
+Found variable declaration
+Found variable declaration
+Found variable declaration
+Found variable declaration
+Found variable declaration
+Found variable declaration
+Found variable declaration
+Found variable declaration
+variable declaration total: 9
+
+combined execution of traversals
+Found variable declaration
+Found variable declaration
+Found int constant
+Found variable declaration
+Found for loop
+Found variable declaration
+Found int constant
+Found int constant
+Found variable declaration
+Found int constant
+Found int constant
+Found variable declaration
+Found int constant
+Found variable declaration
+Found int constant
+Found for loop
+Found variable declaration
+Found int constant
+Found int constant
+Found variable declaration
+Found int constant
+for loop total: 2
+int constant total: 10
+variable declaration total: 9
