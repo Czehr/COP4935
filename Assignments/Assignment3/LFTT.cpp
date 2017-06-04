@@ -72,6 +72,9 @@ public:
 		key = num;
 		next.store(MarkableReference(succ));
 	}
+	Node(NodeInfo* nodeInfo) {
+		info.store(nodeInfo);
+	}
 };
 
 static void find(Node *head, int key, Node *&pred, Node *&curr) {
@@ -129,6 +132,7 @@ public:
 					if (x < PERCENT_INSERT) {						// % insert
 						random = Insert;
 						nodes[i][j][k] = new Node();
+						nodes[i][j][k]->info = new NodeInfo(descriptors[i][j]); // Initialize NodeInfo. TODO: This may not be the best place to put it
 					}
 					else if (x < PERCENT_DELETE + PERCENT_INSERT) {	// % delete
 						random = Delete;
@@ -159,6 +163,7 @@ public:
 				descriptors[i][j]->ops[k].key = rand() % KEY_RANGE;
 				descriptors[i][j]->ops[k].type = Insert;
 				nodes[i][j][k] = new Node();
+				nodes[i][j][k]->info = new NodeInfo(descriptors[i][j]); // Initialize NodeInfo
 			}
 		}
 	}
@@ -177,9 +182,7 @@ public:
 
 	bool findNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
 	{
-		NodeInfo* info = new NodeInfo;
-		info->desc = desc;
-		info->opid = opid;
+		NodeInfo* info = new NodeInfo(desc, opid);
 		Status ret;
 		while (true) {
 			Node *pred, *curr;
@@ -196,9 +199,7 @@ public:
 	bool insertNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
 	{
 
-		NodeInfo* info = new NodeInfo;
-		info->desc = desc;
-		info->opid = opid;
+		NodeInfo* info = new NodeInfo(desc, opid);
 		Status ret;
 		while (true) {
 			Node *pred, *curr;
@@ -219,9 +220,7 @@ public:
 
 	bool deleteNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
 	{
-		NodeInfo* info = new NodeInfo;
-		info->desc = desc;
-		info->opid = opid;
+		NodeInfo* info = new NodeInfo(desc, opid);
 		Status ret;
 		while (true) {
 			Node *pred, *curr;
