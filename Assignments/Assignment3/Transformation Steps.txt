@@ -1,0 +1,19 @@
+Steps to Transform Lock-free List to Transactional Lock-free List without Rollbacks
+ 
+After we finished our implementation of the lock-free transactional list we identified eight main components of the transform.
+ 
+1. Define the new data types as required by Algorithm 1. Possibly define “Status” and “HelpStack” stucts. These definitions can simply be inserted into the header file.
+ 
+2. Add a NodeInfo pointer to the Node class. This requires modifying an existing class, so we may need to modify implementation details, or specify that the Node class meets certain requirements. For example, the only functions that can modify Node pointers are Insert/Delete/Find.
+ 
+3. Implement pointer marking functionality as required by Algorithm 2. Can choose to follow the textbook or the method outlined by Harris. These functions can be defined in a header file as long as they are available within the scope of the List object.
+ 
+4. Add functions to the List object for establishing the physical existence of a Node as well as interpreting the logical status of a Node as required by Algorithm 3. Logical status is based on the last operation from the most recent transaction that accessed the node. Physical status relies on the concrete node structure, and nodes are only removed by MarkDelete.
+ 
+5. Add a function to the List object for modifying the logical status of a Node when an operation is called on that Node as required by Algorithm 4. Updates NodeInfo pointers before any node-level manipulations occur.
+ 
+6. Add functions to the List object for the entry point of a transaction as well as the core loop that executes the operations in a transaction as required by Algorithm 5. Relies on a specification for transaction descriptors. ExecuteOps loop uses a per-thread helpstack to identify and handle live-lock scenarios.
+ 
+7. Add a function to the List class, or an object like the Window class, that can traverse the Nodes in a hand-over-hand manner and provide a current and predecessor node on a successful call. Other option is to identify pre-existing function in the List class that provides these data.
+ 
+8. Replace Insert, Delete, and Find functions in the List object with wrapper functions that rely on logical status and call the original Insert, Delete, and Find functions for physical changes as required by Algorithms 6-8. Take special care that MarkDelete doesn't interrupt the node chain or IsNodePresent may fail.
