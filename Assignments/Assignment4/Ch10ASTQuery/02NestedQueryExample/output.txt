@@ -1,0 +1,15 @@
+In convert_type(): case tk_vector: still not correctly implemented! 
+function name #0 is get_foo at line 10 
+function name #1 is set_foo at line 11 
+function name #2 is get_foo at line 0 
+function name #3 is set_foo at line 0 
+function name #4 is get_foo at line 28 
+function name #5 is set_foo at line 29 
+function name #0 is get_foo at line 10 
+function name #1 is set_foo at line 11 
+function name #2 is get_foo at line 0 
+function name #3 is set_foo at line 0 
+function name #4 is get_foo at line 28 
+function name #5 is set_foo at line 29 
+Number of class definitions in the memory pool is: 3
+Number of class definitions AND types in the memory pool is: 601
