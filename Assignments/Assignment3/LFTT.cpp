@@ -10,13 +10,13 @@ using namespace std;
 
 // Following are adjustable to run the program
 // with different sets of functionality
-const int THREAD_COUNT = 4;
-const int TRANSACTION_SIZE = 1;
-const int PERCENT_INSERT = 33;
-const int PERCENT_DELETE = 33;
+const int THREAD_COUNT = 32;
+const int TRANSACTION_SIZE = 4;
+const int PERCENT_INSERT = 15;
+const int PERCENT_DELETE = 5;
 // Because of the way our random function works, PERCENT_FIND does nothing. 
 // Set it by leaving a percentage left over from insert and delete. 
-const int PERCENT_FIND = 33;
+const int PERCENT_FIND = 80;
 const int KEY_RANGE = 10000;
 const int NUM_TRANSACTIONS = 320000;
 const bool DEBUG = false;
