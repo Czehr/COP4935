@@ -131,8 +131,6 @@ public:
 
 					if (x < PERCENT_INSERT) {						// % insert
 						random = Insert;
-						nodes[i][j][k] = new Node();
-						nodes[i][j][k]->info = new NodeInfo(descriptors[i][j]); // Initialize NodeInfo. TODO: This may not be the best place to put it
 					}
 					else if (x < PERCENT_DELETE + PERCENT_INSERT) {	// % delete
 						random = Delete;
@@ -141,6 +139,7 @@ public:
 						random = Find;
 					}
 
+					nodes[i][j][k] = new Node();
 					descriptors[i][j]->ops[k].key = rand() % KEY_RANGE;
 					descriptors[i][j]->ops[k].type = random;
 				}
@@ -357,6 +356,8 @@ public:
 			}
 			else {
 				Node *node = getNode(threadNum, transactionNum, opid, num, curr);
+				//Node *node = new Node(num, curr);
+				node->info = new NodeInfo(pool.descriptors[threadNum][transactionNum]);
 				uintptr_t old = MarkableReference(curr, false);
 				uintptr_t altered = MarkableReference(node, false);
 				if (pred->next.compare_exchange_strong(old, altered))
