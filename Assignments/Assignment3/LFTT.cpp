@@ -8,15 +8,15 @@
 #include "LFTT.h"
 using namespace std;
 
-// Following three are adjustable to run the program
+// Following are adjustable to run the program
 // with different sets of functionality
-const int THREAD_COUNT = 4;
-const int TRANSACTION_SIZE = 1;
-const int PERCENT_INSERT = 33;
-const int PERCENT_DELETE = 33;
+const int THREAD_COUNT = 32;
+const int TRANSACTION_SIZE = 4;
+const int PERCENT_INSERT = 15;
+const int PERCENT_DELETE = 5;
 // Because of the way our random function works, PERCENT_FIND does nothing. 
 // Set it by leaving a percentage left over from insert and delete. 
-const int PERCENT_FIND = 33;
+const int PERCENT_FIND = 80;
 const int KEY_RANGE = 10000;
 const int NUM_TRANSACTIONS = 320000;
 const bool DEBUG = false;
@@ -24,17 +24,14 @@ const bool DEBUG = false;
 class MarkableReference;
 class Node;
 class Pool;
-class Window;
 class List;
 
-static Node* getNode(int, int, int, Node*);
-static Node* getNode2(int, int, int, int, Node*);
-static Window* getWindow(Node*, Node*, int);
+static Node* getNode(int, int, int, int, Node*);
 
 // MarkableReference functions
 static const uintptr_t mask = 1; // This mask is used to properly store our mark
 
-								 // Take a pointer and a mark and pack them into one pointer
+// Take a pointer and a mark and pack them into one pointer
 uintptr_t MarkableReference(Node *ref = NULL, bool mark = false) {
 	return ((uintptr_t)ref & ~mask) | (mark ? 1 : 0);
 }
@@ -54,22 +51,6 @@ Node *get(uintptr_t val, bool *mark) {
 bool isMarked(NodeInfo* val) {
 	return ((long)val & 1);
 }
-
-//Additional LFTT functionality
-
-/*Placeholders for "do_" functions
-void do_locatePred(Node*& pred, Node*& curr, uint32_t key){
-return;
-}
-
-bool do_insert(uint32_t key, Desc* desc, uint8_t opid, Node*& inserted, Node*& pred){
-return true;
-}
-
-void do_delete(uint32_t key, Desc* desc, uint8_t opid, Node*& deleted, Node*& pred){
-return;
-}*/
-
 
 class Node {
 public:
@@ -91,25 +72,14 @@ public:
 		key = num;
 		next.store(MarkableReference(succ));
 	}
+	Node(NodeInfo* nodeInfo) {
+		info.store(nodeInfo);
+	}
 };
 
-class Window {
-public:
-	Node *pred, *curr;
-
-	Window() {
-		pred = NULL;
-		curr = NULL;
-	}
-
-	Window(Node *myPred, Node *myCurr) {
-		pred = myPred;
-		curr = myCurr;
-	}
-
-	static Window *find(Node *head, int key, int threadNum) {
-		Node *pred, *curr, *succ;
-		bool marked = false;
+static void find(Node *head, int key, Node *&pred, Node *&curr) {
+	Node *succ;
+	bool marked = false;
 
 	retry: while (true) {
 		pred = head;
@@ -127,21 +97,20 @@ public:
 				succ = get(curr->next.load(), &marked);
 			}
 
-			if (curr->key >= key)
-				return getWindow(pred, curr, threadNum);
+			if (curr->key >= key) {
+				return;
+			}
 			pred = curr;
 			curr = succ;
 		}
 	}
-	}
-};
+}
 
 class Pool {
 public:
 	unsigned char bits[THREAD_COUNT + 1][NUM_TRANSACTIONS / THREAD_COUNT];
 	Desc *descriptors[THREAD_COUNT + 1][NUM_TRANSACTIONS / THREAD_COUNT];
 	Node *nodes[THREAD_COUNT + 1][NUM_TRANSACTIONS / THREAD_COUNT][TRANSACTION_SIZE];
-	Window *windows[THREAD_COUNT + 1];
 	HelpStack helpstack[THREAD_COUNT + 1];
 	int counter[THREAD_COUNT] = {};
 
@@ -149,7 +118,6 @@ public:
 	Pool() {
 		srand(time(NULL));
 		for (int i = 0; i < THREAD_COUNT; i++) {
-			windows[i] = new Window(); // Each thread gets a Window object
 			for (int j = 0; j < NUM_TRANSACTIONS / THREAD_COUNT; j++) {
 				descriptors[i][j] = new Desc;
 				descriptors[i][j]->size = TRANSACTION_SIZE;
@@ -161,17 +129,17 @@ public:
 					int x = rand() % 100;
 					OpType random;
 
-					if (x < PERCENT_INSERT) {													// % insert
+					if (x < PERCENT_INSERT) {						// % insert
 						random = Insert;
-						nodes[i][j][k] = new Node();
 					}
 					else if (x < PERCENT_DELETE + PERCENT_INSERT) {	// % delete
 						random = Delete;
 					}
-					else {             											 				// % find
+					else {											// % find
 						random = Find;
 					}
 
+					nodes[i][j][k] = new Node();
 					descriptors[i][j]->ops[k].key = rand() % KEY_RANGE;
 					descriptors[i][j]->ops[k].type = random;
 				}
@@ -184,7 +152,6 @@ public:
 			cout << "Not enough space in pool." << endl;
 			exit(EXIT_FAILURE);
 		}
-		windows[THREAD_COUNT] = new Window();
 		for (int j = 0; j < KEY_RANGE; j++) {
 			int i = THREAD_COUNT;
 			descriptors[i][j] = new Desc;
@@ -195,6 +162,7 @@ public:
 				descriptors[i][j]->ops[k].key = rand() % KEY_RANGE;
 				descriptors[i][j]->ops[k].type = Insert;
 				nodes[i][j][k] = new Node();
+				nodes[i][j][k]->info = new NodeInfo(descriptors[i][j]); // Initialize NodeInfo
 			}
 		}
 	}
@@ -213,13 +181,11 @@ public:
 
 	bool findNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
 	{
-		NodeInfo* info = new NodeInfo;
-		info->desc = desc;
-		info->opid = opid;
+		NodeInfo* info = new NodeInfo(desc, opid);
 		Status ret;
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node* curr = window->pred; //do_locatePred(key);
+			Node *pred, *curr;
+			find(head, key, pred, curr);
 			if (isNodePresent(curr, key))
 				ret = updateInfo(curr, info, true, threadNum, transactionNum);
 			else
@@ -227,23 +193,16 @@ public:
 			if (ret == success) return true;
 			if (ret == fail) return false;
 		}
-
-
-
-		//Window *window = Window::find(head, key, threadNum);
-		//return window->curr;
 	}
 
 	bool insertNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
 	{
 
-		NodeInfo* info = new NodeInfo;
-		info->desc = desc;
-		info->opid = opid;
+		NodeInfo* info = new NodeInfo(desc, opid);
 		Status ret;
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node* curr = window->pred;
+			Node *pred, *curr;
+			find(head, key, pred, curr);
 			if (isNodePresent(curr, key))
 				ret = updateInfo(curr, info, false, threadNum, transactionNum);
 			else {
@@ -256,19 +215,15 @@ public:
 			if (ret == success) return true;
 			if (ret == fail) return false;
 		}
-
-		//return do_insert(key, threadNum, transactionNum, opid);
 	}
 
 	bool deleteNode(int key, Desc* desc, int opid, int threadNum, int transactionNum)
 	{
-		NodeInfo* info = new NodeInfo;
-		info->desc = desc;
-		info->opid = opid;
+		NodeInfo* info = new NodeInfo(desc, opid);
 		Status ret;
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node* curr = window->pred;
+			Node *pred, *curr;
+			find(head, key, pred, curr);
 			if (isNodePresent(curr, key))
 				ret = updateInfo(curr, info, true, threadNum, transactionNum);
 			else
@@ -282,8 +237,6 @@ public:
 				return false;
 			}
 		}
-
-		//do_delete(key, threadNum);
 	}
 
 	bool isNodePresent(Node* n, int key) {
@@ -320,7 +273,7 @@ public:
 		else if (oldinfo->opid >= info->opid) {
 			return success;
 		}
-		bool hasKey = isKeyPresent(oldinfo, oldinfo->desc); // TODO: What descriptor do we pass in isKeyPresent? Should have second argument
+		bool hasKey = isKeyPresent(oldinfo, oldinfo->desc); // TODO: What descriptor do we pass in isKeyPresent?
 		if ((!hasKey && wantKey) || (hasKey && !wantKey)) {
 			return fail;
 		}
@@ -394,14 +347,17 @@ public:
 		int key = num;
 
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node *pred = window->pred, *curr = window->curr;
+			Node *pred;
+			Node *curr;
+			find(head, key, pred, curr);
 
 			if (curr->key == key) {
 				return false;
 			}
 			else {
-				Node *node = getNode2(threadNum, transactionNum, opid, num, curr);
+				Node *node = getNode(threadNum, transactionNum, opid, num, curr);
+				//Node *node = new Node(num, curr);
+				node->info = new NodeInfo(pool.descriptors[threadNum][transactionNum]);
 				uintptr_t old = MarkableReference(curr, false);
 				uintptr_t altered = MarkableReference(node, false);
 				if (pred->next.compare_exchange_strong(old, altered))
@@ -414,8 +370,8 @@ public:
 		int key = num;
 
 		while (true) {
-			Window *window = Window::find(head, key, threadNum);
-			Node *pred = window->pred, *curr = window->curr;
+			Node *pred, *curr;
+			find(head, key, pred, curr);
 
 			if (curr->key != key) {
 				return false;
@@ -455,28 +411,12 @@ public:
 
 List list; // Create our list
 
-		   /*
-		   static Node* getNode(int threadNum, int operationNum, int num, Node *succ) {
-		   Node *node = pool.nodes[threadNum][operationNum];
-		   node->item = num;
-		   node->key = num;
-		   node->next.store(MarkableReference(succ));
-		   return node;
-		   }*/
-
-static Node* getNode2(int threadNum, int transactionNum, int opid, int num, Node *succ) {
+static Node* getNode(int threadNum, int transactionNum, int opid, int num, Node *succ) {
 	Node *node = pool.nodes[threadNum][transactionNum][opid];
 	node->item = num;
 	node->key = num;
 	node->next.store(MarkableReference(succ));
 	return node;
-}
-
-static Window* getWindow(Node *myPred, Node *myCurr, int threadNum) {
-	Window *window = pool.windows[threadNum];
-	window->pred = myPred;
-	window->curr = myCurr;
-	return window;
 }
 
 void runThread(int threadNum) {
@@ -489,38 +429,6 @@ void runThread(int threadNum) {
 		}
 		if (DEBUG) cout << pool.descriptors[threadNum][i]->status.load();
 	}
-
-
-	/*
-	for(int i=0; i<NUM_TRANSACTIONS/THREAD_COUNT; i++) {
-	switch(pool.bits[threadNum][i]) {
-	case 0:
-	if(list.insertNode(pool.ints[threadNum][i], threadNum, i)) {
-	if(DEBUG)  cout << "Inserted " << pool.ints[threadNum][i] << endl;
-	} else {
-	if(DEBUG) cout << "Failed to insert " << pool.ints[threadNum][i] << " (Already in the set)" << endl;
-	}
-	break;
-	case 1:
-	if(list.deleteNode(pool.ints[threadNum][i], threadNum)) {
-	if(DEBUG) cout << "Removed" << pool.ints[threadNum][i] << endl;
-	} else {
-	if(DEBUG) cout << "Failed to remove " << pool.ints[threadNum][i] << " (Not in the set)" << endl;
-	}
-	break;
-	case 2:
-	if(list.findNode(pool.ints[threadNum][i], threadNum) ){
-	if(DEBUG) cout << "Found" << pool.ints[threadNum][i] << endl;
-	} else {
-	if(DEBUG) cout << "Did not find " << pool.ints[threadNum][i] << endl;
-	}
-	break;
-	default: // This should never be possible, but we need to handle it anyway
-	if(DEBUG) cout << "Invalid case set by bit pool (" <<  (int)pool.bits[threadNum][i] << ")" << endl;
-	break;
-	}
-	}
-	*/
 }
 
 int main(int argc, char *argv[]) {

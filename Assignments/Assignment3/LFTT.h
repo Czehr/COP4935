@@ -49,7 +49,14 @@ struct Desc { // Descriptor
 
 struct NodeInfo { // Node Information
 	Desc* desc;
-	int opid;
+	int opid = 0; // This is the index of the most recent operation that accessed this node
+	NodeInfo(Desc* desc) {
+		this->desc = desc;
+	}
+	NodeInfo(Desc* desc, int opid) {
+		this->desc = desc;
+		this->opid = opid;
+	}
 };
 
 /*struct Node {
