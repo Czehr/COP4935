@@ -1,0 +1,28 @@
+digraph "GwholeGraphAST2.dot" {
+"0x7f3b98346010"[label="SgProject" shape=ellipse,regular=0,URL="\N",tooltip="more info at\N",sides=4,peripheries=1,color="Blue",fillcolor=yellow,fontname="7x13bold",fontcolor=black,style=filled];
+"0xec15f0"[label="SgFileList" shape=polygon,regular=0,URL="\N",tooltip="more info at\N",sides=4,peripheries=1,color="Blue",fillcolor=green,fontname="7x13bold",fontcolor=black,style=filled];
+"0x7f3b8d0d5010"[label="SgSourceFile" shape=polygon,regular=0,URL="\N",tooltip="more info at\N",sides=4,peripheries=1,color="Blue",fillcolor=green,fontname="7x13bold",fontcolor=black,style=filled];
+"0x7f3b8d20b120"[label="SgGlobal" shape=polygon,regular=0,URL="\N",tooltip="more info at\N",sides=4,peripheries=1,color="Blue",fillcolor=green,fontname="7x13bold",fontcolor=black,style=filled];
+"0x7f3b8d20b120" -> "0x7f3b8d20b120__numeric_label__null"[label="numeric_label" dir=none ];
+"0x7f3b8d20b120__numeric_label__null"[label="" shape=diamond ];
+"0x7f3b8d0d5010" -> "0x7f3b8d20b120"[label="globalScope"  ];
+"0x7f3b8d0d5010" -> "0x7f3b8d0d5010__temp_holding_scope__null"[label="temp_holding_scope" dir=none ];
+"0x7f3b8d0d5010__temp_holding_scope__null"[label="" shape=diamond ];
+"0x7f3b8d0d5010" -> "0x7f3b8d0d5010__package__null"[label="package" dir=none ];
+"0x7f3b8d0d5010__package__null"[label="" shape=diamond ];
+"0x7f3b8d0d5010" -> "0x7f3b8d0d5010__import_list__null"[label="import_list" dir=none ];
+"0x7f3b8d0d5010__import_list__null"[label="" shape=diamond ];
+"0x7f3b8d0d5010" -> "0x7f3b8d0d5010__class_list__null"[label="class_list" dir=none ];
+"0x7f3b8d0d5010__class_list__null"[label="" shape=diamond ];
+"0x7f3b9831b068"[label="Sg_File_Info" shape=polygon,regular=0,URL="\N",tooltip="more info at\N",sides=4,peripheries=1,color="Blue",fillcolor=green,fontname="7x13bold",fontcolor=black,style=filled];
+"0x7f3b8d0d5010" -> "0x7f3b9831b068"[label="startOfConstruct"  ];
+"0x7f3b8d0d5010" -> "0xec15f0"[label="parent"  ];
+"0xec15f0" -> "0x7f3b8d0d5010"[label="listOfFiles"  ];
+"0xec15f0" -> "0x7f3b98346010"[label="parent"  ];
+"0x7f3b98346010" -> "0xec15f0"[label="fileList_ptr"  ];
+"0xee0a00"[label="SgDirectoryList" shape=polygon,regular=0,URL="\N",tooltip="more info at\N",sides=4,peripheries=1,color="Blue",fillcolor=green,fontname="7x13bold",fontcolor=black,style=filled];
+"0xee0a00" -> "0x7f3b98346010"[label="parent"  ];
+"0x7f3b98346010" -> "0xee0a00"[label="directoryList"  ];
+"0x7f3b98346010" -> "0x7f3b98346010__parent__null"[label="parent" dir=none ];
+"0x7f3b98346010__parent__null"[label="" shape=diamond ];
+}

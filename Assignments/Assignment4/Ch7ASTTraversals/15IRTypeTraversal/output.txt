@@ -1,0 +1,22 @@
+In convert_type(): case tk_vector: still not correctly implemented! 
+count =      34, memory use =    5168 bytes, node name = SgSymbolTable 
+count =    3674, memory use =  146960 bytes, node name = SgStorageModifier 
+count =   36230, memory use = 3188240 bytes, node name = Sg_File_Info 
+No representative for SgUnparse_Info found in memory pools 
+No representative for SgPartialFunctionType found in memory pools 
+count =     446, memory use =   64224 bytes, node name = SgFunctionType 
+count =      54, memory use =    6480 bytes, node name = SgPointerType 
+count =       2, memory use =     592 bytes, node name = SgForStatement 
+count =       2, memory use =     224 bytes, node name = SgForInitStatement 
+count =       4, memory use =    2368 bytes, node name = SgCtorInitializerList 
+count =       1, memory use =     304 bytes, node name = SgIfStmt 
+count =       9, memory use =     864 bytes, node name = SgExprStatement 
+count =       2, memory use =    1584 bytes, node name = SgTemplateInstantiationDecl 
+count =       1, memory use =     304 bytes, node name = SgTemplateInstantiationDefn 
+count =       2, memory use =    2144 bytes, node name = SgTemplateInstantiationMemberFunctionDecl 
+count =    1715, memory use = 1673840 bytes, node name = SgFunctionDeclaration 
+count =       1, memory use =      48 bytes, node name = SgClassSymbol 
+count =       2, memory use =      96 bytes, node name = SgMemberFunctionSymbol 
+count =    1660, memory use =   79680 bytes, node name = SgFunctionSymbol 
+count =    3674, memory use = 1205072 bytes, node name = SgInitializedName 
+Number of types of IR nodes (after building AST) = 0 

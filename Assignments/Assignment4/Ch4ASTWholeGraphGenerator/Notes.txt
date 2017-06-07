@@ -1,0 +1,3 @@
+Yellow is used for types
+Green is used for expressions
+Statements are a number of different colors and shapes

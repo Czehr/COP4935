@@ -1,0 +1,13 @@
+How are the following represented in the AST: function declaration, function definition, and function call? Include descriptions of any necessary symbols including those which might represent parameters and arguments.
+
+Function declaration:	SgFunctionDeclaration
+	Function parameters:	SgFunctionParameterList
+Function definition:	SgFunctionDefinition
+Function call:				SgFunctionCallExp
+	Note that a function call is assembled from a function expression and arguments. The two are bound together in a function call, function expressions are never called directly (the function call argument list can be empty). 
+
+
+How do the representations of these AST nodes differ for generateDOT() vs generateAstGraph()?
+
+generateDOT() is a function built into ROSE. It creates a DOT file, a graphical format, which is used to visualize ASTs via nodes and edge connections. 
+generateAstGraph() is a similar function, except it is much more detailed in its representation of the input code. generateAstGraph() depicts additional attributes for each node, such as types and mnodifiers. 

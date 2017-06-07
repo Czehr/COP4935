@@ -1,0 +1,18 @@
+In convert_type(): case tk_vector: still not correctly implemented! 
+SgVariableDeclaration: isVolatile = false 
+SgVariableDefinition: isVolatile = false 
+Found a SgInitializedName = a 
+   initializedName: type = 0x7f900868e590 = SgModifierType 
+   initializedName: SgModifierType: isVolatile = true 
+   initializedName: modifierNodes = (nil) 
+SgVariableDeclaration: isVolatile = false 
+SgVariableDefinition: isVolatile = false 
+Found a SgInitializedName = b 
+   initializedName: type = 0x7f9008b08538 = SgPointerType 
+   initializedName: modifierNodes = (nil) 
+SgVariableDeclaration: isVolatile = false 
+SgVariableDefinition: isVolatile = false 
+Found a SgInitializedName = y 
+   initializedName: type = 0x7f900868e590 = SgModifierType 
+   initializedName: SgModifierType: isVolatile = true 
+   initializedName: modifierNodes = (nil) 

@@ -1,0 +1,37 @@
+In convert_type(): case tk_vector: still not correctly implemented! 
+Inside of Sg_File_Info::display(localFile information) of this pointer = 0x7f9484b19068 
+     isTransformation                      = false 
+     isCompilerGenerated                   = false 
+     isOutputInCodeGeneration              = false 
+     isShared                              = false 
+     isFrontendSpecific                    = false 
+     isSourcePositionUnavailableInFrontend = false 
+     isCommentOrDirective                  = false 
+     isToken                               = false 
+     isDefaultArgument                     = false 
+     isImplicitCast                        = false 
+     filename = /home/demo/COP4934/Assignments/Assignment4/Ch7ASTTraversals/04InheritedAttributeVisitorTraversal/inputCode_1.C 
+     line     = 1  column = 1 
+     physical_file_id       = 0 = /home/demo/COP4934/Assignments/Assignment4/Ch7ASTTraversals/04InheritedAttributeVisitorTraversal/inputCode_1.C 
+     physical_line          = 1 
+     source_sequence_number = 0 
+Depth in AST at SgSourceFile = 0 
+Depth in AST at SgGlobal = 1 
+Depth in AST at SgTemplateClassDeclaration = 2 
+Depth in AST at SgTemplateClassDefinition = 3 
+Depth in AST at SgVariableDeclaration = 4 
+Depth in AST at SgInitializedName = 5 
+Depth in AST at SgTemplateMemberFunctionDeclaration = 4 
+Depth in AST at SgFunctionParameterList = 5 
+Depth in AST at SgInitializedName = 6 
+Depth in AST at SgCtorInitializerList = 5 
+Depth in AST at SgTemplateMemberFunctionDeclaration = 4 
+Depth in AST at SgFunctionParameterList = 5 
+Depth in AST at SgInitializedName = 6 
+Depth in AST at SgCtorInitializerList = 5 
+Depth in AST at SgFunctionDeclaration = 2 
+Depth in AST at SgFunctionParameterList = 3 
+Depth in AST at SgInitializedName = 4 
+Depth in AST at SgFunctionDeclaration = 2 
+Depth in AST at SgFunctionParameterList = 3 
+Depth in AST at SgInitializedName = 4 

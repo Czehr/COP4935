@@ -1,0 +1,19 @@
+ROSE Assignment
+
+The goal of this assignment is to be able to write programs using ROSE that allow you to generate and traverse the abstract syntax tree (AST).
+
+Resources:
+	Tutorial - http://rosecompiler.org/ROSE_Tutorial/ROSE-Tutorial.pdf
+
+	Modify and use the makefile from the build tree (AKA compile tree) which can be found in the 'tutorial' directory.
+
+	Install graphviz and zgrviewer as necessary for generating and viewing DOT files.
+
+Read and work through Chapters 2, 3, 4, 7, 10, 13, and 14. In each chapter there are exercises with sample files, and links to where these files can be found in the ROSE release. Perform each exercise, and include the output of each one as a separate file. Some of these files will be source code, and some will be DOT files or postscript renderings of graphviz output. These files should be submitted with a document answering the questions posed at the end of this file. It will be necessary to refer to http://rosecompiler.org/ROSE_HTML_Reference/annotated.html to understand the sample code in Chapters 10, 13, and 14.
+
+After reading Chapter 4 answer the following questions. Refer to http://rosecompiler.org/ROSE_HTML_Reference/annotated.html as necessary.
+	How are the following represented in the AST: function declaration, function definition, and function call?
+		Include descriptions of any necessary symbols including those which might represent paramters and arguments.
+	How do the representations of these AST nodes differ for generateDOT() vs generateAstGraph()?
+
+
