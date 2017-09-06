@@ -18,6 +18,8 @@ enum OpType {
 struct Operation {
 	OpType type;
 	int key;
+	void *val;
+	// TODO: Add more data needed in nodes here?
 };
 struct Desc {
 	int size = TRANSACTION_SIZE;

@@ -13,12 +13,18 @@ public:
 				descriptors[i][j] = new Desc;
 				descriptors[i][j]->status.store(Active);
 				for (int k = 0; k < descriptors[i][j]->size; k++) {
+					int key = rand() % KEY_RANGE;
+					descriptors[i][j]->ops[k].key = key;
+
 					// Use probability distribution of operations.
 					int x = rand() % 100;
 					OpType random;
 
 					if (x < PERCENT_INSERT) {						// % insert
 						random = Insert;
+						string *keyString = new string;
+						*keyString = to_string(key);
+						descriptors[i][j]->ops[k].val = keyString;
 					}
 					else if (x < PERCENT_DELETE + PERCENT_INSERT) {	// % delete
 						random = Delete;
@@ -27,7 +33,7 @@ public:
 						random = Find;
 					}
 
-					descriptors[i][j]->ops[k].key = rand() % KEY_RANGE;
+					
 					descriptors[i][j]->ops[k].type = random;
 				}
 			}

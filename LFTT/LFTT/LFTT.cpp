@@ -2,8 +2,8 @@
 using namespace std;
 
 // Define our functions in advance.
-bool FindNode(int key, Desc* desc, int opid);
-bool InsertNode(int key, Desc* desc, int opid);
+void *FindNode(int key, Desc* desc, int opid);
+bool InsertNode(int key, void *val, Desc* desc, int opid);
 bool DeleteNode(int key, Desc* desc, int opid, Node*& del);
 void MarkDelete(set<Node*> delnodes, Desc* desc);
 void ExecuteOps(Desc* desc, int opid);
@@ -44,7 +44,7 @@ public:
 bool IsNodePresent(Node* n, int key) {
 	return n->key == key;
 }
-bool IsKeyPresent(NodeInfo* info, Desc* desc) {
+bool IsKeyPresent(NodeInfo* info, Desc* desc) { // TODO: May need to modify this when structures have their own ideas about logical status.
 	OpType op = info->desc->ops[info->opid].type;
 	TxStatus status = info->desc->status.load();
 	switch (status) {
@@ -112,10 +112,10 @@ void ExecuteOps(Desc* desc, int opid) {
 	{
 		Operation* op = &desc->ops[opid];
 		if (op->type == Find) {
-			ret = FindNode(op->key, desc, opid);
+			ret = (FindNode(op->key, desc, opid) != NULL);
 		}
 		else if (op->type == Insert) {
-			ret = InsertNode(op->key, desc, opid);
+			ret = InsertNode(op->key, op->val, desc, opid);
 		}
 		else if (op->type == Delete) {
 			Node* del;
@@ -140,7 +140,7 @@ void ExecuteOps(Desc* desc, int opid) {
 }
 
 // Algorithm 6: Template for Transformed Insert Function
-bool InsertNode(int key, Desc* desc, int opid) {
+bool InsertNode(int key, void *val, Desc* desc, int opid) {
 	NodeInfo* info = new NodeInfo; // TODO: Optionally preallocate these.
 	info->desc = desc; info->opid = opid;
 	Status ret = retry;
@@ -151,8 +151,8 @@ bool InsertNode(int key, Desc* desc, int opid) {
 		}
 		else {
 			Node* n = new Node; // TODO: Optionally preallocate these.
-			n->key = key; n->info = info;
-			ret = Do_Insert(n);
+			n->key = key; n->val = val; n->info = info;
+			ret = (Do_Insert(n) ? success : fail);
 		}
 		if (ret == success) {
 			return true;
@@ -164,7 +164,7 @@ bool InsertNode(int key, Desc* desc, int opid) {
 }
 
 // Algorithm 7: Template for Transformed Find Function
-bool FindNode(int key, Desc* desc, int opid) {
+void *FindNode(int key, Desc* desc, int opid) {
 	NodeInfo* info = new NodeInfo; // TODO: Optionally preallocate these.
 	info->desc = desc; info->opid = opid;
 	Status ret = retry;
@@ -177,10 +177,10 @@ bool FindNode(int key, Desc* desc, int opid) {
 			ret = fail;
 		}
 		if (ret == success) {
-			return true;
+			return curr->val;
 		}
 		else if (ret == fail) {
-			return false;
+			return NULL;
 		}
 	}
 }
@@ -209,7 +209,7 @@ bool DeleteNode(int key, Desc* desc, int opid, Node*& del) {
 	}
 }
 void MarkDelete(set<Node*> delnodes, Desc* desc) { // TODO: Completely change this behavior if we preallocate nodes.
-	for each (Node* del in delnodes) {
+	for (Node* del : delnodes) {
 		// If a NULL value was added to the set.
 		if (del == NULL) {
 			continue;

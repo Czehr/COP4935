@@ -4,9 +4,7 @@
 #include <thread>
 #include <chrono>
 #include <cstdlib>
-#include "LFTTTypeDef.h"
 #include "LFTT.h"
-#include "LinkedList.h"
 
 // The following are adjustable to run the program with different sets of functionality.
 const int THREAD_COUNT = 4;

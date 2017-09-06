@@ -55,7 +55,7 @@ Node* Do_LocatePred(int key) {
 	return curr;
 }
 
-Status Do_Insert(Node *n) {
+bool Do_Insert(Node *n) {
 	// Pointers retrieved by Do_LocatePred.
 	Node *pred = NULL, *curr = NULL;
 	// The key for the node we are interested in.
@@ -77,7 +77,7 @@ Status Do_Insert(Node *n) {
 	}
 }
 
-Status Do_Delete(Node *n) {
+bool Do_Delete(Node *n) {
 	// Pointers retrieved by Do_LocatePred.
 	Node *pred = NULL, *curr = NULL;
 	// The key for the node we are interested in.
@@ -97,10 +97,22 @@ Status Do_Delete(Node *n) {
 				uintptr_t newNode2 = (uintptr_t)CLR_MARK(succ);
 				if (pred->next.compare_exchange_strong(oldNode2, newNode2)) {
 					// Deallocate unused nodes.
+					// TODO: Does the deletion process cause a possible ABA problem? 
 					delete curr; // TODO: Optionally preallocate these and ignore deallocation.
 				}
 				return success;
 			}
 		}
+	}
+}
+
+bool Do_Find(int key) {
+	Node *pred, *curr;
+	Do_LocatePred(pred, curr, key);
+	if (curr != NULL && curr->key == key) {
+		return true;
+	}
+	else {
+		return false;
 	}
 }
