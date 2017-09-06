@@ -7,7 +7,7 @@ public:
 
 	// Initialize our randomized transaction descriptors.
 	Pool() {
-		srand(time(NULL));
+		srand(time(nullptr));
 		for (int i = 0; i < THREAD_COUNT; i++) {
 			for (int j = 0; j < NUM_TRANSACTIONS / THREAD_COUNT; j++) {
 				descriptors[i][j] = new Desc;
