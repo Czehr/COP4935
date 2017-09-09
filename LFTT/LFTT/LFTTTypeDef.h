@@ -18,8 +18,8 @@ enum OpType {
 struct Operation {
 	OpType type;
 	int key;
+	// Point to whatever object you want to associate with a key here. 
 	void *val;
-	// TODO: Add more data needed in nodes here?
 };
 struct Desc {
 	int size = TRANSACTION_SIZE;

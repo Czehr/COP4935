@@ -3,6 +3,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <string>
 #include <cstdlib>
 #include "LFTT.h"
 
