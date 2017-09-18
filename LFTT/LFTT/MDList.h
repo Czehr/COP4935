@@ -25,10 +25,10 @@ public:
 	std::atomic<NodeInfo*> info;
 	int key;
 	// TODO: Other info is needed for specific implementations. Use ROSE to modify?
-	int k[D];
+	int k[D]; // Coordinate of the node in the list?
 	void *val; // Value
-	std::atomic<Node*> child[D];
-	AdoptDesc * adesc;
+	std::atomic<Node*> child[D]; // Array of next pointers
+	std::atomic<AdoptDesc*> adesc;
 };
 
 void init();

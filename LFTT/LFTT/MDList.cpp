@@ -19,10 +19,17 @@ struct locatePredData {
 	AdoptDesc *ad = NULL;
 };
 
+// Mapping function
+int *KeyToCoord(int key) {
+	// Convert the key to base Dth root of N.
+	// Take the restulting key and map each digit to a dimension. 
+}
+
 void init() {
 
 }
-Node* Do_LocatePred(int k[], locatePredData &data) {
+Node* Do_LocatePred(int key, locatePredData &data) {
+	int k[] = KeyToCoord(key);
 	while (data.dc < D) {
 		while (data.curr != NULL && k[data.dc] > data.curr->k[data.dc]) {
 			data.pred = data.curr;
@@ -49,17 +56,112 @@ Node* Do_LocatePred(int k[], locatePredData &data) {
 Node* Do_LocatePred(int key) {
 
 }
+// Algorithm 5: Concurrent Insert
 bool Do_Insert(Node* node) {
 	// At this point, the key and NodeDesc should already be set by LFTT.
-	locatePredData data;
+	AdoptDesc *ad;
+	node.k = KeyToCoord(key); // TODO: Put this in the for loop too?
+	for (int i = 0; i < D; i++) {
+		node->child[i] = nullptr;
+	}
+	while (true) {
+		locatePredData data;
+		data.pred = nullptr;
+		data.curr = head;
+		data.dp = 0;
+		data.dc = 0;
+		Do_LocatePred(node->key, data);
+		ad = (data.curr != nullptr) ? data.curr->adesc.load() : nullptr;
+		if (ad != nullptr && data.dp != data.dc) {
+			FinishInserting(data.curr, ad);
+		}
+		if (IS_MARKED(data.pred->child[data.dp].load(), Fdel)) {
+			data.curr = SET_MARK(data.curr, Fdel);
+			if (data.dc == D - 1) {
+				data.dc = D;
+			}
+		}
+		
+		// FillNewNode();
+		data.ad = nullptr;
+		if (data.dp != data.dc) {
+			ad = new AdoptDesc;
+			data.ad->curr = data.curr;
+			data.ad->dp = data.dp;
+			data.ad->dc = data.dc;
+		}
+		for (int i = 0; i < data.dp; i++) {
+			node->child[i].store(SET_MARK(node->child[i].load,Fadp)); //TODO: Is this right?
+		}
+		for (int i = data.dp; i < D; i++) {
+			node->child[i].store(nullptr);
+		}
+		if (data.dc < D) {
+			node->child[data.dc] = data.curr;
+		}
+		node->adesc = data.ad;
+		// End FillNewNode()
+
+		if (data.pred->child[data.dp].compare_exchange_strong(data.curr, node)) {
+			if (ad != nullptr) {
+				FinishInserting(node, data.ad);
+			}
+			break;
+		}
+	}
+	
 
 }
-bool Do_Delete(Node* n) {
+// Algorithm 6: Child Adoption
+void FinishInserting(Node* n, AdoptDesc* ad)
+{
+	Node *child;
+	Node *curr = ad->curr;
+	int dp = ad->dp;
+	int dc = ad->dc;
+	for (int i = dp; i < dc; i++) {
 
+		child = SET_MARK(curr->child[i].load(), Fadp); // TODO: FetchAndOr?
+		child = CLR_MARK(child, Fadp);
+		if (n->child[i] == nullptr) {
+			Node *oldNode = nullptr;
+			Node *newNode = child;
+			n->child[i].compare_exchange_strong(oldNode, newNode);
+		}
+	}
+	n->adesc.compare_exchange_strong(ad, nullptr);
+}
+// Algorithm 7: Concurrent Delete
+bool Do_Delete(Node* n) {
+	locatePredData data;
+	Node *child, *marked;
+	while (true)
+	{
+		data.pred = nullptr;
+		data.curr = head;
+		data.dp = 0;
+		data.dc = 0;
+		Do_LocatePred(n->key, data);
+		if (data.dc != D) {
+			return nullptr;
+		}
+		marked = SET_MARK(data.curr, Fdel);
+		if (data.pred->child[data.dp].compare_exchange_strong(data.curr, marked)) {
+			child = marked;
+		}
+		if (CLR_MARK(child, Fdel | Fadp) == data.curr) {
+			if (!IS_MARKED(child, Fdel | Fadp)) {
+				return data.curr->val;
+			}
+			else if (IS_MARKED(child, Fdel)) {
+				return nullptr;
+			}
+		}
+	}
 }
 bool Do_Find(int key) {
 	locatePredData data;
-	Do_LocatePred(KeyToCoord(key), data);
+	Do_LocatePred(key, data);
 	if (data.dc = D) {
 		return data.curr->val;
 	}
