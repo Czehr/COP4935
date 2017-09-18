@@ -1,4 +1,5 @@
 #include "LinkedList.h"
+#include <limits.h>
 using namespace std;
 
 // Pointer marking
@@ -38,8 +39,8 @@ void Do_LocatePred(Node *&pred, Node *&curr, int key) {
 		if (curr != pred_next)
 		{
 			//Failed to remove deleted nodes, start over from pred.
-			unsigned int oldNext = (uintptr_t)pred_next;
-			unsigned int newNext = (uintptr_t)curr;
+			uintptr_t oldNext = (uintptr_t)pred_next;
+			uintptr_t newNext = (uintptr_t)curr;
 			if (!pred->next.compare_exchange_strong(oldNext, newNext))
 			{
 				curr = head;
