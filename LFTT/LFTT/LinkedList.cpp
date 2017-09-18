@@ -16,7 +16,7 @@ void init() {
 
 	Node *tail = new Node;
 	tail->key = INT_MAX;
-	tail->next.store(NULL);
+	tail->next.store(nullptr);
 
 	head->next.store((uintptr_t)tail);
 }
@@ -49,7 +49,7 @@ void Do_LocatePred(Node *&pred, Node *&curr, int key) {
 }
 // Modified function used in LFTT.
 Node* Do_LocatePred(int key) {
-	Node *pred = NULL, *curr = NULL;
+	Node *pred = nullptr, *curr = nullptr;
 	// We do not care about the resut of pred, So only return curr.
 	Do_LocatePred(pred, curr, key);
 	return curr;
@@ -57,7 +57,7 @@ Node* Do_LocatePred(int key) {
 
 bool Do_Insert(Node *n) {
 	// Pointers retrieved by Do_LocatePred.
-	Node *pred = NULL, *curr = NULL;
+	Node *pred = nullptr, *curr = nullptr;
 	// The key for the node we are interested in.
 	int key = n->key;
 	while (true) {
@@ -79,7 +79,7 @@ bool Do_Insert(Node *n) {
 
 bool Do_Delete(Node *n) {
 	// Pointers retrieved by Do_LocatePred.
-	Node *pred = NULL, *curr = NULL;
+	Node *pred = nullptr, *curr = nullptr;
 	// The key for the node we are interested in.
 	int key = n->key;
 	while (true) {
@@ -97,7 +97,7 @@ bool Do_Delete(Node *n) {
 				uintptr_t newNode2 = (uintptr_t)CLR_MARK(succ);
 				if (pred->next.compare_exchange_strong(oldNode2, newNode2)) {
 					// Deallocate unused nodes.
-					// TODO: Does the deletion process cause a possible ABA problem? 
+					// TODO: Does the deletion process cause a possible ABA problem?
 					delete curr; // TODO: Optionally preallocate these and ignore deallocation.
 				}
 				return success;
@@ -109,7 +109,7 @@ bool Do_Delete(Node *n) {
 bool Do_Find(int key) {
 	Node *pred, *curr;
 	Do_LocatePred(pred, curr, key);
-	if (curr != NULL && curr->key == key) {
+	if (curr != nullptr && curr->key == key) {
 		return true;
 	}
 	else {

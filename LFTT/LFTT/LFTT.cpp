@@ -112,7 +112,7 @@ void ExecuteOps(Desc* desc, int opid) {
 	{
 		Operation* op = &desc->ops[opid];
 		if (op->type == Find) {
-			ret = (FindNode(op->key, desc, opid) != NULL);
+			ret = (FindNode(op->key, desc, opid) != nullptr);
 		}
 		else if (op->type == Insert) {
 			ret = InsertNode(op->key, op->val, desc, opid);
@@ -180,7 +180,7 @@ void *FindNode(int key, Desc* desc, int opid) {
 			return curr->val;
 		}
 		else if (ret == fail) {
-			return NULL;
+			return nullptr;
 		}
 	}
 }
@@ -203,15 +203,15 @@ bool DeleteNode(int key, Desc* desc, int opid, Node*& del) {
 			return true;
 		}
 		else if (ret == fail) {
-			del = NULL; // TODO: Make sure passing back NULL doesn't have an adverse affect on our set.
+			del = nullptr; // TODO: Make sure passing back nullptr doesn't have an adverse affect on our set.
 			return false;
 		}
 	}
 }
 void MarkDelete(set<Node*> delnodes, Desc* desc) { // TODO: Completely change this behavior if we preallocate nodes.
 	for (Node* del : delnodes) {
-		// If a NULL value was added to the set.
-		if (del == NULL) {
+		// If a nullptr value was added to the set.
+		if (del == nullptr) {
 			continue;
 		}
 		NodeInfo* info = del->info.load();
