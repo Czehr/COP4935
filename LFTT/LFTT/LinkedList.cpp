@@ -16,7 +16,7 @@ void init() {
 
 	Node *tail = new Node;
 	tail->key = INT_MAX;
-	tail->next.store(nullptr);
+	tail->next.store((uintptr_t)nullptr);
 
 	head->next.store((uintptr_t)tail);
 }
