@@ -209,20 +209,22 @@ bool DeleteNode(int key, Desc* desc, int opid, Node*& del) {
 	}
 }
 void MarkDelete(set<Node*> delnodes, Desc* desc) { // TODO: Completely change this behavior if we preallocate nodes.
-	for (Node* del : delnodes) {
+	set<Node*>::iterator del = delnodes.begin();
+	while (del != delnodes.end()) {
 		// If a nullptr value was added to the set.
-		if (del == nullptr) {
+		if (*del == nullptr) {
 			continue;
 		}
-		NodeInfo* info = del->info.load();
+		NodeInfo* info = (*del)->info.load();
 		// If the node has already been removed.
 		if (info->desc != desc) {
 			continue;
 		}
 		NodeInfo* unmarked = info;
 		NodeInfo* marked = (NodeInfo*)SET_MARK(info);
-		if (del->info.compare_exchange_strong(unmarked, marked)) {
-			Do_Delete(del);
+		if ((*del)->info.compare_exchange_strong(unmarked, marked)) {
+			Do_Delete(*del);
 		}
+		del++;
 	}
 }
