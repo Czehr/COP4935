@@ -1,6 +1,7 @@
-*.out
-Assignments/Assignment3/.vs/
 *.exe
 *.obj
+*.out
+*.sln
 *.vcxproj
 *.vcxproj.filters
+*.vs
