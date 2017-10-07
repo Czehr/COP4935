@@ -7,7 +7,7 @@ LDFLAGS  = $(shell $(ROSE_INSTALLATION)/bin/rose-config ldflags) -L. \
            $(addprefix -Wl$(comma)-rpath -Wl$(comma), $(subst :, , $(LIBDIRS)))
 
 ## Translator
-TRANSLATOR=myTranslator
+TRANSLATOR=addHeaderTranslator
 TRANSLATOR_SOURCE=$(TRANSLATOR).cpp
 
 ## Input testcode for translator
