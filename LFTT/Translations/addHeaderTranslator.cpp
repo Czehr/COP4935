@@ -41,7 +41,7 @@ as the first header. Recommended for use.
 	SgFilePtrList::const_iterator file = fileList.begin();
 	sourceFile = isSgSourceFile(*file);
 	const std::string &headerFileName = "LFTT.h";
-	PreprocessingInfo::RelativePositionTyp position = PreprocessingInfo::before;
+	PreprocessingInfo::RelativePositionType position = PreprocessingInfo::before;
 	bool isSystemHeader = false;
 
 	SageInterface::insertHeader (sourceFile, headerFileName, isSystemHeader, position);
