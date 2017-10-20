@@ -32,8 +32,6 @@ public:
 					else {											// % find
 						random = Find;
 					}
-
-					
 					descriptors[i][j]->ops[k].type = random;
 				}
 			}

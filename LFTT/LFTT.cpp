@@ -40,34 +40,12 @@ public:
 #define CLR_MARK(_p)	(((uintptr_t)(_p)) & ~1)
 #define IS_MARKED(_p)	(((uintptr_t)(_p)) & 1)
 
-// Algorithm 3: Logical Status
-bool IsNodePresent(Node* n, int key) {
-	return n->key == key;
-}
-bool IsKeyPresent(NodeInfo* info, Desc* desc) { // TODO: May need to modify this when structures have their own ideas about logical status.
-	OpType op = info->desc->ops[info->opid].type;
-	TxStatus status = info->desc->status.load();
-	switch (status) {
-		case Active:
-			if (info->desc == desc) {
-				return op == Find || op == Insert;
-			}
-			else {
-				return op == Find || op == Delete;
-			}
-		case Comitted:
-			return op == Find || op == Insert;
-		case Aborted:
-			return op == Find || op == Delete;
-	}
-	return false;
-}
-
 // Algorithm 4: Update NodeInfo
 Status UpdateNodeInfo(Node* n, NodeInfo* info, bool wantkey) {
 	NodeInfo* oldinfo = n->info;
 	if (IS_MARKED(oldinfo)) {
 		Do_Delete(n);
+
 		return retry;
 	}
 	if (oldinfo->desc != info->desc) {
@@ -76,7 +54,7 @@ Status UpdateNodeInfo(Node* n, NodeInfo* info, bool wantkey) {
 	else if (oldinfo->opid >= info->opid) {
 		return success;
 	}
-	bool haskey = IsKeyPresent(oldinfo, oldinfo->desc); // TODO: What descriptor do we pass in isKeyPresent?
+	bool haskey = IsKeyPresent(n);
 	if ((!haskey && wantkey) || haskey && !wantkey) {
 		return fail;
 	}
@@ -96,7 +74,7 @@ thread_local HelpStack helpstack;
 bool ExecuteTransaction(Desc* desc) {
 	helpstack.init();
 	ExecuteOps(desc, 0);
-	return desc->status.load() == Comitted;
+	return desc->status.load() == Committed;
 }
 void ExecuteOps(Desc* desc, int opid) {
 	bool ret = true;
@@ -127,8 +105,8 @@ void ExecuteOps(Desc* desc, int opid) {
 	helpstack.pop();
 	if (ret == true) {
 		TxStatus active = Active;
-		TxStatus comitted = Comitted;
-		if (desc->status.compare_exchange_strong(active, comitted)) {
+		TxStatus committed = Committed;
+		if (desc->status.compare_exchange_strong(active, committed)) {
 			MarkDelete(delnodes, desc);
 		}
 	}

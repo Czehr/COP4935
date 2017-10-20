@@ -7,7 +7,7 @@ const int TRANSACTION_SIZE = 4;
 //Algorithm 1: Type Definition
 enum TxStatus {
 	Active,
-	Comitted,
+	Committed,
 	Aborted
 };
 enum OpType {

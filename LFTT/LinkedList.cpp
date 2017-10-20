@@ -1,5 +1,4 @@
 #include "LinkedList.h"
-#include <limits.h>
 using namespace std;
 
 // Pointer marking
@@ -32,6 +31,7 @@ void Do_LocatePred(Node *&pred, Node *&curr, int key) {
 		pred = curr;
 		pred_next = CLR_MARK(pred->next.load());
 		curr = pred_next;
+		// Begin pointer marking section
 		while (IS_MARKED(curr->next.load()))
 		{
 			curr = CLR_MARK(curr->next.load());
@@ -46,6 +46,7 @@ void Do_LocatePred(Node *&pred, Node *&curr, int key) {
 				curr = head;
 			}
 		}
+		// End pointer marking section
 	}
 }
 // Modified function used in LFTT.
@@ -63,7 +64,8 @@ bool Do_Insert(Node *n) {
 	int key = n->key;
 	while (true) {
 		Do_LocatePred(pred, curr, key);
-		if (curr->key == key) {
+		// If the node logically exists.
+		if (IsNodePresent(curr, key) && IsKeyPresent(curr)) {
 			return fail;
 		}
 		else {
@@ -85,7 +87,8 @@ bool Do_Delete(Node *n) {
 	int key = n->key;
 	while (true) {
 		Do_LocatePred(pred, curr, key);
-		if (curr->key != key) {
+		// If the node is logically removed.
+		if (!IsNodePresent(curr, key) || !IsKeyPresent(curr)) {
 			return fail;
 		}
 		else {
@@ -110,7 +113,8 @@ bool Do_Delete(Node *n) {
 bool Do_Find(int key) {
 	Node *pred, *curr;
 	Do_LocatePred(pred, curr, key);
-	if (curr != nullptr && curr->key == key) {
+	// If the node logically exists.
+	if (IsNodePresent(curr, key) && IsKeyPresent(curr)) {
 		return true;
 	}
 	else {

@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstddef>
 #include "LFTT.h"
+#include "LFTTTypeDef.h"
 
 // The following are adjustable to run the program with different sets of functionality.
 const int THREAD_COUNT = 4;
@@ -18,5 +19,5 @@ const int PERCENT_DELETE = 33;
 const int PERCENT_FIND = 33;
 
 const int KEY_RANGE = 10000;
-const int NUM_TRANSACTIONS = 40000;
+const int NUM_TRANSACTIONS = 160000;
 const bool DEBUG = false;
