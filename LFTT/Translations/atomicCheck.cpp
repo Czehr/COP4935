@@ -6,6 +6,10 @@ using namespace std;
 enum TxStatus {Active=0,Aborted=1} ;
 std::atomic< TxStatus  > status;
 
+class Node{
+	int key;
+};
+
 int main(int argc,char *argv[])
 {
    status . store(Active);
