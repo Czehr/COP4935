@@ -14,7 +14,7 @@ void visitorTraversal::visit(SgNode* node)
 {
   PreprocessingInfo::RelativePositionType position = PreprocessingInfo::inside;
   if (node->variantT() == V_SgClassDefinition) {
-        SageInterface::attachArbitraryText(isSgLocatedNode(node), "  std::atomic<NodeInfo*> info;", position);
+    SageInterface::attachArbitraryText(isSgLocatedNode(node), "  std::atomic<NodeInfo*> info;", position);
         //cout << "Found Node Type: " << node->class_name() << endl;
   }
 }
@@ -26,27 +26,19 @@ int main (int argc, char** argv)
 
     // Run internal consistency tests on AST
     AstTests::runAllTests(project);
+    visitorTraversal myVisitor;
+    myVisitor.traverseInputFiles(project, preorder);
 
-    // Insert your own manipulations of the AST here...
+    SgSourceFile *sourceFile;
+    const SgFilePtrList& fileList = project->get_fileList();
+    SgFilePtrList::const_iterator file = fileList.begin();
+    sourceFile = isSgSourceFile(*file);
+    const std::string &headerFileName = "LFTTTypeDef.h";
+    PreprocessingInfo::RelativePositionType position = PreprocessingInfo::before;
+    bool isSystemHeader = false;
 
-        visitorTraversal myVisitor;
-        myVisitor.traverseInputFiles(project, preorder);
+    SageInterface::insertHeader (sourceFile, headerFileName, isSystemHeader, position);
 
-        SgSourceFile *sourceFile;
-        const SgFilePtrList& fileList = project->get_fileList();
-        SgFilePtrList::const_iterator file = fileList.begin();
-        sourceFile = isSgSourceFile(*file);
-        const std::string &headerFileName = "LFTTTypeDef.h";
-        PreprocessingInfo::RelativePositionType position = PreprocessingInfo::before;
-        bool isSystemHeader = false;
-
-        SageInterface::insertHeader (sourceFile, headerFileName, isSystemHeader, position);
-
-
-
-
-    // Generate source code from AST and invoke your
-    // desired backend compiler
+    // Generate source code from AST and invoke your backend compiler
     return backend(project);
 }
-
