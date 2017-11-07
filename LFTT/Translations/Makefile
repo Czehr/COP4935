@@ -11,22 +11,30 @@ TRANSLATOR=fullTranslator
 TRANSLATOR_SOURCE=$(TRANSLATOR).cpp
 
 ## Input testcode for translator
-TESTCODE=atomicCheck.cpp
+TESTCODE=LinkedListNode.h
+
 
 #-------------------------------------------------------------
-# Makefile Targets
-#-------------------------------------------------------------
+# Makefile Targets #-------------------------------------------------------------
 
 all: $(TRANSLATOR)
 
 # compile the translator and generate an executable
 # -g -> to be used by default to enable debugging code
 $(TRANSLATOR): $(TRANSLATOR_SOURCE)
-	$(CXX) -g $(TRANSLATOR_SOURCE) $(CPPFLAGS) $(LDFLAGS) -o $(TRANSLATOR)
+        $(CXX) -g $(TRANSLATOR_SOURCE) $(CPPFLAGS) $(LDFLAGS) -o $(TRANSLATOR)
 
 # test the translator for atomic operations
 check: $(TRANSLATOR)
-	./$(TRANSLATOR) -c -std=c++11 -I. -I$(ROSE_INSTALLATION)/include $(TESTCODE)
+        cp $(TESTCODE) RoseIntermediateCPPFile.cpp 
+        ./$(TRANSLATOR) -c -std=c++11 -I. -I$(ROSE_INSTALLATION)/include RoseIntermediateCPPFile.cpp  
+        cp rose_RoseIntermediateCPPFile.cpp rose_LinkedListNode.h 
+        rm rose_RoseIntermediateCPPFile.cpp
+        rm RoseIntermediateCPPFile.cpp       
+
+rename: cp rose_LinkedListNode.cpp rose_LinkedListNode.h
+
 
 clean:
-	rm -rf $(TRANSLATOR) *.o rose_* *.dot
+        rm -rf $(TRANSLATOR) *.o rose_* *.dot
+
