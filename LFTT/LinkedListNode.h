@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LFTTTypeDef.h"
+#include <atomic>
 
 class Node {
 public:
