@@ -10,9 +10,8 @@ class visitorTraversal : public AstSimpleProcessing
 
 void visitorTraversal::visit(SgNode* node)
 {
-  //if (node->variantT() == <insert Node Type Here>) {
-  //    cout << "Found Node Type: " << <insert Node type Here> << endl;
-  //}
+  if (node->variantT() == V_SgClassDeclaration)
+      cout << "This is a class declaration!" << endl;
 }
 
 
