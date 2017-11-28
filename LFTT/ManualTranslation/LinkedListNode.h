@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINKEDLISTNODE_H
+#define LINKEDLISTNODE_H
 
 #include "LFTTTypeDef.h"
 #include <atomic>
@@ -11,3 +12,5 @@ public:
 	// TODO: Other info is needed for specific implementations. Use ROSE to modify?
 	std::atomic<uintptr_t> next;
 };
+
+#endif LINKEDLISTNODE_H

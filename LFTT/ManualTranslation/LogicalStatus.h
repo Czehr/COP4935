@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LOGICALSTATUS_H
+#define LOGICALSTATUS_H
 
 #include <assert.h>
 #include "LFTTTypeDef.h"
@@ -6,3 +7,5 @@
 
 bool IsNodePresent(Node* n, int key);
 bool IsKeyPresent(Node* n);
+
+#endif LOGICALSTATUS_H

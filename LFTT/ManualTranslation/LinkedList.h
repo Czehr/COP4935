@@ -3,7 +3,6 @@
 #include <atomic>
 #include <limits.h>
 #include "LinkedListNode.h"
-#include "LFTT.h"
 #include "LogicalStatus.h"
 
 void init();
