@@ -3,7 +3,7 @@
 
 #include <assert.h>
 #include "LFTTTypeDef.h"
-#include "LinkedListNode.h"
+#include "SkipListNode.h"
 
 bool IsNodePresent(Node* n, int key);
 bool IsKeyPresent(Node* n);
